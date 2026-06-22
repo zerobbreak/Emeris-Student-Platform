@@ -1,0 +1,33 @@
+---
+description: HIVE Showcase Platform — read context docs before implementing features
+alwaysApply: true
+---
+
+# Project Context (`context/`)
+
+Before planning or writing code, read the relevant files in `context/`. These are the source of truth for product intent, architecture, UI, and stack conventions.
+
+## Context files
+
+| File | Purpose |
+|------|---------|
+| `context/idea-context.md` | Vision, modules, schema, API specs, UI/component architecture, implementation phases, AI integration |
+| `context/architecture.md` | High-level architecture (when populated) |
+| `context/design patterns.md` | Emeris brand palette, CSS variables, Tailwind tokens, accessibility and UI usage |
+| `context/best-practices.md` | Neon + Next.js + ShadCN + TanStack Query + Drizzle patterns |
+| `context/progress tracker.md` | Current work, next steps, and session history — **read before starting; update after meaningful changes** |
+
+## Agent rules
+
+1. **Do not edit** `idea-context.md`, `architecture.md`, `design patterns.md`, or `best-practices.md`. If something is unclear or missing, ask the user — do not patch those spec files.
+2. **Do update** `progress tracker.md` under **Current**, **Next**, **Future**, **Fixes**, and **Notes** when you finish tasks or change project direction.
+3. **Stack alignment**: Follow `best-practices.md` for project structure, Drizzle queries, API routes, TanStack Query, and ShadCN usage.
+4. **Product alignment**: Features must serve the HIVE Showcase goal — student portfolios, Hive projects, skills, gamification, and recognition. See `idea-context.md` for scope and MVP phases.
+5. **UI alignment**: Use Emeris colors and patterns from `design patterns.md` (`#0D5C4D` primary, gold accents, WCAG contrast). Replace default Next.js styling.
+6. **Architecture fallback**: If `architecture.md` is empty, use the UI/Component Architecture and Database Schema sections in `idea-context.md`.
+
+## Quick reference
+
+- **Stack**: Neon PostgreSQL, Drizzle ORM, Next.js App Router, ShadCN, TanStack Query, TypeScript strict
+- **Roles**: student, lecturer, admin (+ industry partner read-only in future)
+- **MVP focus (Phase 1)**: Auth, student profiles, project upload, skills board, basic gamification, leaderboards, admin panel
