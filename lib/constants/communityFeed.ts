@@ -28,6 +28,89 @@ export const communityTags = [
   { label: "#teamwork", count: 14 },
 ] as const;
 
+export type TrendDirection = "up" | "down" | "steady";
+
+export type PopularTopic = {
+  tag: string;
+  mentions: number;
+  posts: number;
+  trend: TrendDirection;
+  changePercent: number;
+};
+
+export type TrendingProject = {
+  id: string;
+  title: string;
+  author: string;
+  course: string;
+  views: number;
+  reactions: number;
+  trend: TrendDirection;
+  changePercent: number;
+};
+
+export const popularTopics: PopularTopic[] = [
+  { tag: "react", mentions: 42, posts: 18, trend: "up", changePercent: 12 },
+  { tag: "portfolio", mentions: 38, posts: 15, trend: "up", changePercent: 8 },
+  { tag: "hive-projects", mentions: 31, posts: 12, trend: "up", changePercent: 22 },
+  { tag: "career", mentions: 27, posts: 11, trend: "steady", changePercent: 2 },
+  { tag: "typescript", mentions: 24, posts: 9, trend: "up", changePercent: 15 },
+  { tag: "design", mentions: 19, posts: 7, trend: "down", changePercent: 3 },
+];
+
+export const trendingProjects: TrendingProject[] = [
+  {
+    id: "p1",
+    title: "Campus Navigation PWA",
+    author: "Thandi M.",
+    course: "BCAD",
+    views: 124,
+    reactions: 48,
+    trend: "up",
+    changePercent: 24,
+  },
+  {
+    id: "p2",
+    title: "Hive Skills Dashboard",
+    author: "Jordan P.",
+    course: "HCERT",
+    views: 98,
+    reactions: 41,
+    trend: "up",
+    changePercent: 18,
+  },
+  {
+    id: "p3",
+    title: "Community Impact Prototype",
+    author: "Lerato N.",
+    course: "HON",
+    views: 156,
+    reactions: 56,
+    trend: "up",
+    changePercent: 31,
+  },
+  {
+    id: "p4",
+    title: "Neon Study Notes API",
+    author: "Samuel O.",
+    course: "BCAD",
+    views: 72,
+    reactions: 33,
+    trend: "steady",
+    changePercent: 4,
+  },
+  {
+    id: "p5",
+    title: "Group Project Checklist Tool",
+    author: "Aisha K.",
+    course: "HCERT",
+    views: 61,
+    reactions: 19,
+    trend: "down",
+    changePercent: 2,
+  },
+];
+
 export const trendingTopics = [
   { title: "Showcasing your first Hive project", posts: 12 },
   { title: "Portfolio tips for BCAD students", posts: 9 },

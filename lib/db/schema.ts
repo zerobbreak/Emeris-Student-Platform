@@ -113,9 +113,64 @@ export const userSkills = pgTable(
   ],
 );
 
+export const feedPosts = pgTable(
+  "feed_posts",
+  {
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => createId()),
+    authorId: text("author_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    text: text("text").notNull(),
+    imageUrl: text("image_url"),
+    likeCount: integer("like_count").default(0).notNull(),
+    dislikeCount: integer("dislike_count").default(0).notNull(),
+    commentCount: integer("comment_count").default(0).notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => [
+    index("idx_feed_posts_author_id").on(table.authorId),
+    index("idx_feed_posts_created_at").on(table.createdAt),
+  ],
+);
+
+export const feedPostComments = pgTable(
+  "feed_post_comments",
+  {
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => createId()),
+    postId: text("post_id")
+      .notNull()
+      .references(() => feedPosts.id, { onDelete: "cascade" }),
+    authorId: text("author_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    text: text("text").notNull(),
+    likeCount: integer("like_count").default(0).notNull(),
+    dislikeCount: integer("dislike_count").default(0).notNull(),
+    likedByCreator: boolean("liked_by_creator").default(false).notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => [
+    index("idx_feed_post_comments_post_id").on(table.postId),
+    index("idx_feed_post_comments_author_id").on(table.authorId),
+  ],
+);
+
 export const usersRelations = relations(users, ({ many }) => ({
   sessions: many(sessions),
   userSkills: many(userSkills),
+  feedPosts: many(feedPosts),
+  feedPostComments: many(feedPostComments),
 }));
 
 export const sessionsRelations = relations(sessions, ({ one }) => ({
@@ -139,3 +194,25 @@ export const userSkillsRelations = relations(userSkills, ({ one }) => ({
     references: [skills.id],
   }),
 }));
+
+export const feedPostsRelations = relations(feedPosts, ({ one, many }) => ({
+  author: one(users, {
+    fields: [feedPosts.authorId],
+    references: [users.id],
+  }),
+  comments: many(feedPostComments),
+}));
+
+export const feedPostCommentsRelations = relations(
+  feedPostComments,
+  ({ one }) => ({
+    post: one(feedPosts, {
+      fields: [feedPostComments.postId],
+      references: [feedPosts.id],
+    }),
+    author: one(users, {
+      fields: [feedPostComments.authorId],
+      references: [users.id],
+    }),
+  }),
+);

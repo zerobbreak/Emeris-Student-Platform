@@ -1,7 +1,6 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import Link from "next/link";
 import {
   Bookmark,
   Flame,
@@ -9,29 +8,19 @@ import {
   MessageCircle,
   PenLine,
   Sparkles,
-  TrendingUp,
   Users,
 } from "lucide-react";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { Button, buttonVariants } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { useCurrentUser } from "@/hooks/useAuth";
 import { useProfile } from "@/hooks/useProfile";
 import {
   communityPosts,
-  communityTags,
   formatRelativeTime,
-  trendingTopics,
   type CommunityPost,
   type FeedFilter,
 } from "@/lib/constants/communityFeed";
@@ -169,31 +158,18 @@ function PostCard({ post }: { post: CommunityPost }) {
 export function CommunityHome() {
   const [filter, setFilter] = useState<FeedFilter>("relevant");
   const { data: user } = useCurrentUser();
-  const { data: profile, isLoading } = useProfile(user?.id ?? null);
+  const { data: profile } = useProfile(user?.id ?? null);
 
   const sortedPosts = useMemo(() => sortPosts(filter), [filter]);
   const firstName = user?.name.split(" ")[0] ?? "there";
 
-  if (!user || isLoading) {
-    return (
-      <div className="mx-auto max-w-7xl space-y-6">
-        <div className="h-40 animate-pulse rounded-2xl bg-muted" />
-        <div className="grid gap-6 lg:grid-cols-[200px_1fr_280px]">
-          <div className="hidden h-64 animate-pulse rounded-xl bg-muted lg:block" />
-          <div className="space-y-4">
-            {Array.from({ length: 3 }).map((_, i) => (
-              <div key={i} className="h-48 animate-pulse rounded-xl bg-muted" />
-            ))}
-          </div>
-          <div className="hidden h-64 animate-pulse rounded-xl bg-muted xl:block" />
-        </div>
-      </div>
-    );
+  if (!user) {
+    return null;
   }
 
   return (
-    <div className="mx-auto max-w-7xl space-y-8">
-      <section className="relative overflow-hidden rounded-2xl bg-primary px-6 py-8 text-primary-foreground shadow-lg sm:px-10">
+    <div className="flex h-full flex-col">
+      <section className="relative overflow-hidden bg-primary px-6 py-8 text-primary-foreground sm:px-10">
         <div
           className="pointer-events-none absolute inset-0 opacity-20"
           style={{
@@ -210,12 +186,12 @@ export function CommunityHome() {
               <Users className="size-3" />
               Hive Community
             </Badge>
-            <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">
+            <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
               Learn together, {firstName}
             </h1>
-            <p className="max-w-2xl text-primary-foreground/85">
-              Share project wins, ask for feedback, and discover what other EMERIS
-              IT students are building — a dev-community space for the Hive.
+            <p className="max-w-2xl text-sm text-primary-foreground/85 sm:text-base">
+              Share project wins, ask for feedback, and discover what other
+              EMERIS IT students are building.
             </p>
           </div>
           <div className="flex shrink-0 items-center gap-3 rounded-xl border border-white/20 bg-white/10 px-4 py-3 backdrop-blur-sm">
@@ -230,139 +206,59 @@ export function CommunityHome() {
         </div>
       </section>
 
-      <div className="grid gap-6 lg:grid-cols-[200px_1fr] xl:grid-cols-[200px_1fr_280px]">
-        <aside className="hidden lg:block">
-          <Card className="sticky top-6 border-primary/10">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-semibold">Popular tags</CardTitle>
-              <CardDescription className="text-xs">
-                Topics students are discussing
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-1 pt-0">
-              {communityTags.map((tag) => (
-                <button
-                  key={tag.label}
-                  type="button"
-                  className="flex w-full items-center justify-between rounded-lg px-2 py-1.5 text-left text-sm transition hover:bg-primary/5 hover:text-primary"
-                  disabled
-                >
-                  <span>{tag.label}</span>
-                  <span className="text-xs text-muted-foreground">{tag.count}</span>
-                </button>
-              ))}
-            </CardContent>
-          </Card>
-        </aside>
-
-        <div className="min-w-0 space-y-5">
-          <Card className="border-primary/15">
-            <CardContent className="space-y-4 pt-0">
-              <div className="flex items-start gap-3">
-                <Avatar className="size-10">
-                  <AvatarImage
-                    src={profile?.profileImage ?? undefined}
-                    alt={user.name}
-                  />
-                  <AvatarFallback className="bg-primary/10 text-primary">
-                    {getInitials(user.name)}
-                  </AvatarFallback>
-                </Avatar>
-                <Textarea
-                  placeholder="Share an update, tip, or question with the Hive..."
-                  className="min-h-20 resize-none border-primary/15 focus-visible:ring-primary"
-                  disabled
+      <div className="flex-1 space-y-5 p-6">
+        <Card className="border-primary/15">
+          <CardContent className="space-y-4 pt-0">
+            <div className="flex items-start gap-3">
+              <Avatar className="size-10">
+                <AvatarImage
+                  src={profile?.profileImage ?? undefined}
+                  alt={user.name}
                 />
-              </div>
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <p className="text-xs text-muted-foreground">
-                  Writing posts opens when community features launch.
-                </p>
-                <Button size="sm" disabled>
-                  <PenLine className="size-4" />
-                  Create post
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-
-          <div className="flex flex-wrap gap-2">
-            {feedFilters.map((item) => (
-              <Button
-                key={item.id}
-                variant={filter === item.id ? "default" : "outline"}
-                size="sm"
-                onClick={() => setFilter(item.id)}
-                className={cn(
-                  filter !== item.id &&
-                    "border-primary/15 hover:border-primary/30 hover:bg-primary/5",
-                )}
-              >
-                {item.label}
+                <AvatarFallback className="bg-primary/10 text-primary">
+                  {getInitials(user.name)}
+                </AvatarFallback>
+              </Avatar>
+              <Textarea
+                placeholder="Share an update, tip, or question with the Hive..."
+                className="min-h-20 resize-none border-primary/15 focus-visible:ring-primary"
+                disabled
+              />
+            </div>
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <p className="text-xs text-muted-foreground">
+                Writing posts opens when community features launch.
+              </p>
+              <Button size="sm" disabled>
+                <PenLine className="size-4" />
+                Create post
               </Button>
-            ))}
-          </div>
+            </div>
+          </CardContent>
+        </Card>
 
-          <div className="space-y-4">
-            {sortedPosts.map((post) => (
-              <PostCard key={post.id} post={post} />
-            ))}
-          </div>
+        <div className="flex flex-wrap gap-2">
+          {feedFilters.map((item) => (
+            <Button
+              key={item.id}
+              variant={filter === item.id ? "default" : "outline"}
+              size="sm"
+              onClick={() => setFilter(item.id)}
+              className={cn(
+                filter !== item.id &&
+                  "border-primary/15 hover:border-primary/30 hover:bg-primary/5",
+              )}
+            >
+              {item.label}
+            </Button>
+          ))}
         </div>
 
-        <aside className="hidden space-y-4 xl:block">
-          <Card className="sticky top-6 border-secondary/30 bg-secondary/5">
-            <CardHeader className="pb-3">
-              <CardTitle className="flex items-center gap-2 text-sm font-semibold">
-                <TrendingUp className="size-4 text-secondary" />
-                Trending on Hive
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3 pt-0">
-              {trendingTopics.map((topic, index) => (
-                <div key={topic.title}>
-                  <p className="text-sm font-medium leading-snug">{topic.title}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {topic.posts} posts this week
-                  </p>
-                  {index < trendingTopics.length - 1 && (
-                    <Separator className="mt-3" />
-                  )}
-                </div>
-              ))}
-            </CardContent>
-          </Card>
-
-          <Card className="border-primary/10">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-semibold">Your Hive presence</CardTitle>
-              <CardDescription className="text-xs">
-                Build credibility before you post
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-3 pt-0">
-              <p className="text-sm text-muted-foreground">
-                A complete profile helps lecturers and peers recognise your work
-                when discussions go live.
-              </p>
-              <Link
-                href={`/profile/${user.id}`}
-                className={cn(buttonVariants({ variant: "default", size: "sm" }), "w-full")}
-              >
-                View my profile
-              </Link>
-              <Link
-                href="/profile/edit"
-                className={cn(
-                  buttonVariants({ variant: "outline", size: "sm" }),
-                  "w-full border-primary/20",
-                )}
-              >
-                Edit profile
-              </Link>
-            </CardContent>
-          </Card>
-        </aside>
+        <div className="space-y-4">
+          {sortedPosts.map((post) => (
+            <PostCard key={post.id} post={post} />
+          ))}
+        </div>
       </div>
     </div>
   );

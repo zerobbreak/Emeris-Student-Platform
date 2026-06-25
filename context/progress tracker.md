@@ -11,8 +11,9 @@
 - **Database**: Extended schema (`passwordHash`, `sessions`, `isActive`, `isOnboarded`, indexes); migration `0001_safe_iceman`; skills seed (30 skills) + admin seed script
 - **Avatar upload**: Vercel Blob integration (`BLOB_READ_WRITE_TOKEN`)
 - **Onboarding**: 4-step wizard; course picker uses IT codes (`BCAD`, `HCERT`, `HON`) via `lib/constants/itCourses.ts`
-- **Platform home** (`/dashboard`): post-onboarding hub with welcome hero, stats, and module cards (`PlatformHome`)
-- **Hive Community** (`/community`): DEV-style feed with tags sidebar, post cards, trending panel, and composer preview (`CommunityHome` — mock data until Phase 2)
+- **Platform shell** (`app/(dashboard)/layout.tsx`): `PlatformShell` 3-panel layout on all dashboard child routes — `PlatformNavPanel` (left), `{children}` (center), `PlatformFeedPanel` (right)
+- **Platform home** (`/dashboard`): center `PlatformInfoHub` with auth/profile hooks in `dashboard/page.tsx`
+- **Hive Community** (`/community`): center feed content via `CommunityHome` (mock data until Phase 2)
 
 ---
 
@@ -46,4 +47,4 @@
 - **Platform name**: HIVE Showcase Platform for EMERIS IT
 - **Auth flow**: Register → `/onboarding` → dashboard; login → `/dashboard`; public profiles at `/profile/[id]`
 - **Default seeded admin**: `admin@emeris.ac.uk` (password from `SEED_ADMIN_PASSWORD` in `.env.local`)
-- **Last updated**: June 2026 — Hive Community feed page (mock data)
+- **Last updated**: June 2026 — Platform home feed (DB-backed posts & comments)

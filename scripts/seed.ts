@@ -26,29 +26,30 @@ async function main() {
 
   if (!email || !password) {
     console.log("Skipping admin seed — SEED_ADMIN_EMAIL/PASSWORD not set");
-    return;
+  } else {
+    const normalizedEmail = email.toLowerCase();
+    const existingAdmin = await db.query.users.findFirst({
+      where: eq(users.email, normalizedEmail),
+    });
+
+    if (existingAdmin) {
+      console.log("Admin user already exists, skipping");
+    } else {
+      const passwordHash = await hashPassword(password);
+      await db.insert(users).values({
+        email: normalizedEmail,
+        passwordHash,
+        name: "Platform Admin",
+        role: "admin",
+        isOnboarded: true,
+      });
+      console.log(`Seeded admin user: ${normalizedEmail}`);
+    }
   }
 
-  const normalizedEmail = email.toLowerCase();
-  const existingAdmin = await db.query.users.findFirst({
-    where: eq(users.email, normalizedEmail),
-  });
+  const { seedFeed } = await import("../drizzle/seeds/seedFeed");
+  await seedFeed(db);
 
-  if (existingAdmin) {
-    console.log("Admin user already exists, skipping");
-    return;
-  }
-
-  const passwordHash = await hashPassword(password);
-  await db.insert(users).values({
-    email: normalizedEmail,
-    passwordHash,
-    name: "Platform Admin",
-    role: "admin",
-    isOnboarded: true,
-  });
-
-  console.log(`Seeded admin user: ${normalizedEmail}`);
   console.log("Seeds complete.");
 }
 

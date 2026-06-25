@@ -27,7 +27,7 @@ export default function ProfileEditPage() {
   }
 
   return (
-    <div className="mx-auto max-w-2xl">
+    <div className="p-6">
       <h1 className="mb-6 text-2xl font-semibold">Edit profile</h1>
       <ProfileEditForm profile={profile} />
     </div>
