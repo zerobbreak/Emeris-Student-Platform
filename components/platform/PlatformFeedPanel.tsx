@@ -20,6 +20,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   popularTopics,
   trendingProjects,
@@ -84,7 +85,7 @@ export function PlatformFeedPanel({ user: _user, profileImage: _profileImage }: 
   return (
     <aside
       aria-label="Hive trends"
-      className="flex h-full min-h-0 flex-col bg-muted/20"
+      className="flex h-full min-h-0 flex-col border-l bg-card"
     >
       <div className="shrink-0 border-b px-4 py-4">
         <div className="flex items-center gap-2">
@@ -98,7 +99,7 @@ export function PlatformFeedPanel({ user: _user, profileImage: _profileImage }: 
         </div>
       </div>
 
-      <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
+      <ScrollArea className="h-0 min-h-0 flex-1">
         <div className="space-y-4 p-4">
         <Card className="border-primary/10">
           <CardHeader className="pb-2">
@@ -198,7 +199,7 @@ export function PlatformFeedPanel({ user: _user, profileImage: _profileImage }: 
           Live trend tracking ships with Hive Projects in Phase 2
         </p>
         </div>
-      </div>
+      </ScrollArea>
     </aside>
   );
 }

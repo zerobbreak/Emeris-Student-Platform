@@ -7,8 +7,8 @@ import { useProfile } from "@/hooks/useProfile";
 
 function PlatformShellSkeleton() {
   return (
-    <div className="flex flex-1 flex-col p-4">
-      <div className="grid h-[clamp(36rem,calc(100dvh-3rem),52rem)] min-h-0 overflow-hidden rounded-2xl border bg-card shadow-sm lg:grid-cols-[260px_1fr] xl:grid-cols-[260px_1fr_340px]">
+    <div className="flex min-h-dvh flex-col">
+      <div className="grid flex-1 items-start lg:grid-cols-[260px_1fr] xl:grid-cols-[260px_1fr_340px]">
         <div className="hidden h-full animate-pulse bg-muted/30 lg:block" />
         <div className="space-y-4 p-6">
           <div className="h-40 animate-pulse rounded-xl bg-muted" />
@@ -37,9 +37,9 @@ export function PlatformShell({ children }: PlatformShellProps) {
   }
 
   return (
-    <div className="flex flex-1 flex-col p-4">
-      <div className="grid h-[clamp(36rem,calc(100dvh-3rem),52rem)] min-h-0 overflow-hidden rounded-2xl border bg-card shadow-sm lg:grid-cols-[260px_1fr] xl:grid-cols-[260px_1fr_340px]">
-        <div className="min-h-0 overflow-y-auto border-b p-3 lg:border-b-0 lg:border-r lg:p-4">
+    <div className="flex h-dvh flex-col overflow-hidden">
+      <div className="grid h-full min-h-0 lg:grid-cols-[260px_1fr] xl:grid-cols-[260px_1fr_340px]">
+        <div className="min-h-0 overflow-y-auto border-b p-3 lg:border-b-0 lg:p-4">
           <PlatformNavPanel
             userId={user.id}
             user={user}

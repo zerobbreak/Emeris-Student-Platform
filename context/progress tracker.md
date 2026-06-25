@@ -12,7 +12,7 @@
 - **Avatar upload**: Vercel Blob integration (`BLOB_READ_WRITE_TOKEN`)
 - **Onboarding**: 4-step wizard; course picker uses IT codes (`BCAD`, `HCERT`, `HON`) via `lib/constants/itCourses.ts`
 - **Platform shell** (`app/(dashboard)/layout.tsx`): `PlatformShell` 3-panel layout on all dashboard child routes — `PlatformNavPanel` (left), `{children}` (center), `PlatformFeedPanel` (right)
-- **Platform home** (`/dashboard`): center `PlatformInfoHub` with auth/profile hooks in `dashboard/page.tsx`
+- **Platform home** (`/dashboard`): center `PlatformInfoHub` via `PlatformHome`
 - **Hive Community** (`/community`): center feed content via `CommunityHome` (mock data until Phase 2)
 
 ---
