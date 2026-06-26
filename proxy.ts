@@ -1,8 +1,10 @@
-import { auth } from "@/lib/auth/server";
+import { type NextRequest } from "next/server";
 
-export default auth.middleware({
-  loginUrl: "/login",
-});
+import { updateSession } from "@/lib/supabase/proxy";
+
+export default async function proxy(request: NextRequest) {
+  return updateSession(request, { loginUrl: "/login" });
+}
 
 export const config = {
   matcher: [

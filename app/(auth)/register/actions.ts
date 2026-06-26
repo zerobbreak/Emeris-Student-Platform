@@ -2,8 +2,9 @@
 
 import { redirect } from "next/navigation";
 
-import { auth } from "@/lib/auth/server";
-import { ensureAppUser } from "@/lib/services/userSync";
+import { getAuthProviderUser } from "@/lib/auth/supabase-user";
+import { ensureAppUser } from "@/lib/db/queries/user";
+import { createClient } from "@/lib/supabase/server";
 import type { UserRole } from "@/types/auth";
 
 export async function signUpWithEmail(
@@ -19,30 +20,32 @@ export async function signUpWithEmail(
     return { error: "Admin accounts cannot be self-registered" };
   }
 
-  const { data, error } = await auth.signUp.email({
+  const appRole = role === "lecturer" ? "lecturer" : "student";
+  const supabase = await createClient();
+
+  const { data, error } = await supabase.auth.signUp({
     email,
-    name,
     password,
+    options: {
+      data: {
+        name,
+        role: appRole,
+      },
+    },
   });
 
   if (error) {
-    if (error.code === "NETWORK_DNS") {
-      return { error: "Check NEON_AUTH_BASE_URL in .env.local" };
-    }
     return { error: error.message || "Failed to create account" };
   }
 
-  const neonUser = data?.user ?? (await auth.getSession()).data?.user;
-  if (neonUser) {
-    await ensureAppUser(
-      {
-        id: neonUser.id,
-        email: neonUser.email,
-        name: neonUser.name,
-      },
-      role === "lecturer" ? "lecturer" : "student",
-    );
+  if (data.user && data.session) {
+    const providerUser = getAuthProviderUser(data.user);
+    await ensureAppUser(providerUser, appRole);
+    redirect("/onboarding");
   }
 
-  redirect("/onboarding");
+  return {
+    error:
+      "Account created. Check your email to confirm your address, then sign in.",
+  };
 }

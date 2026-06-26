@@ -1,13 +1,14 @@
-import { put } from "@vercel/blob";
 import { desc, eq } from "drizzle-orm";
 
 import { db } from "@/lib/db/client";
 import { feedPosts } from "@/lib/db/schema";
+import {
+  StorageError,
+  uploadPlatformImage,
+} from "@/lib/supabase/storage";
 import type { CreateFeedPostInput } from "@/lib/validators/feedValidator";
 import type { FeedAuthor, FeedComment, FeedPost } from "@/types/feed";
 
-const ALLOWED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp"];
-const MAX_FILE_SIZE = 5 * 1024 * 1024;
 
 export class FeedError extends Error {
   constructor(
@@ -140,28 +141,13 @@ export async function createFeedPost(
 }
 
 export async function uploadFeedImage(userId: string, file: File) {
-  if (!ALLOWED_IMAGE_TYPES.includes(file.type)) {
-    throw new FeedError(
-      "VALIDATION_ERROR",
-      "Unsupported file format. Use JPEG, PNG, or WebP",
-    );
+  try {
+    const imageUrl = await uploadPlatformImage(userId, "feed", file);
+    return { imageUrl };
+  } catch (error) {
+    if (error instanceof StorageError) {
+      throw new FeedError(error.code, error.message);
+    }
+    throw error;
   }
-
-  if (file.size > MAX_FILE_SIZE) {
-    throw new FeedError("VALIDATION_ERROR", "File too large. Max 5MB");
-  }
-
-  if (!process.env.BLOB_READ_WRITE_TOKEN) {
-    throw new FeedError(
-      "SERVICE_UNAVAILABLE",
-      "Image upload is not configured",
-    );
-  }
-
-  const blob = await put(`feed-images/${userId}/${file.name}`, file, {
-    access: "public",
-    addRandomSuffix: true,
-  });
-
-  return { imageUrl: blob.url };
 }

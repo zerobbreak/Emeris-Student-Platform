@@ -6,10 +6,10 @@
 
 ## Current
 
-- **Feature 01 — Auth & Profiles (implemented)**: **Neon Auth** (`@neondatabase/auth`) for sign-up/sign-in/session; app profile data in Drizzle `users` table synced via `ensureAppUser()`
+- **Feature 01 — Auth & Profiles (implemented)**: **Supabase Auth** (`@supabase/ssr`) for sign-up/sign-in/session; app profile data in Drizzle `users` table synced via `ensureAppUser()`
 - **Stack foundation**: ShadCN UI (base-nova), TanStack Query, Zod validation, Emeris brand tokens in `globals.css`
-- **Database**: Extended schema (`passwordHash`, `sessions`, `isActive`, `isOnboarded`, indexes); migration `0001_safe_iceman`; skills seed (30 skills) + admin seed script
-- **Avatar upload**: Vercel Blob integration (`BLOB_READ_WRITE_TOKEN`)
+- **Database**: **Supabase PostgreSQL** via Drizzle (`postgres-js`); queries in `lib/db/queries/`; data access via server actions (`lib/actions/`) — no `/api/v1` routes
+- **Avatar & post images**: Supabase Storage (`platform-images` bucket) via `lib/supabase/storage.ts` — avatars, feed, and community uploads
 - **Onboarding**: 4-step wizard; course picker uses IT codes (`BCAD`, `HCERT`, `HON`) via `lib/constants/itCourses.ts`
 - **Platform shell** (`app/(dashboard)/layout.tsx`): `PlatformShell` 3-panel layout on all dashboard child routes — `PlatformNavPanel` (left), `{children}` (center), `PlatformFeedPanel` (right)
 - **Platform home** (`/dashboard`): cohort feed via `CommunityHome` with shared `PlatformPageHero`
@@ -25,7 +25,8 @@
 - [ ] Wire real **stats** on profile (currently stub zeros until projects/gamification exist)
 - [ ] Wire platform home module links when skills board and leaderboards ship
 - [ ] Add **admin panel** route group (`/admin/*`) when Feature requirements land
-- [ ] Configure **`NEON_AUTH_BASE_URL`** from Neon Console (Project → Branch → Auth → Configuration) in `.env.local`
+- [ ] Set **`DATABASE_URL`**, **`NEXT_PUBLIC_SUPABASE_URL`**, and **`NEXT_PUBLIC_SUPABASE_ANON_KEY`** in `.env.local`
+- [ ] Run **`supabase/storage.sql`** in Supabase SQL Editor to create the `platform-images` bucket and RLS policies
 
 ---
 
@@ -39,8 +40,8 @@
 
 ## Fixes
 
-- Auth uses **Neon Auth** (`/api/auth/[...path]`), not custom JWT routes
-- Legacy `sessions` table / JWT utils removed from runtime; profile `users` rows sync on login/register
+- Auth uses **Supabase Auth** with SSR cookie sessions; profile `users` rows sync on login/register/callback
+- Data layer: Drizzle queries in `lib/db/queries/`; client hooks call server actions instead of REST API
 
 ---
 

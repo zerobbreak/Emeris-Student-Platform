@@ -1,13 +1,14 @@
-import { put } from "@vercel/blob";
 import { desc, eq } from "drizzle-orm";
 
 import { db } from "@/lib/db/client";
 import { communityPosts } from "@/lib/db/schema";
+import {
+  StorageError,
+  uploadPlatformImage,
+} from "@/lib/supabase/storage";
 import type { CreateCommunityPostInput } from "@/lib/validators/communityPostValidator";
 import type { CommunityPost, CommunityPostKind } from "@/types/communityPost";
 
-const ALLOWED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp"];
-const MAX_FILE_SIZE = 5 * 1024 * 1024;
 
 export class CommunityPostError extends Error {
   constructor(
@@ -138,32 +139,13 @@ export async function createCommunityPost(
 }
 
 export async function uploadCommunityPostImage(userId: string, file: File) {
-  if (!ALLOWED_IMAGE_TYPES.includes(file.type)) {
-    throw new CommunityPostError(
-      "VALIDATION_ERROR",
-      "Unsupported file format. Use JPEG, PNG, or WebP",
-    );
+  try {
+    const imageUrl = await uploadPlatformImage(userId, "community", file);
+    return { imageUrl };
+  } catch (error) {
+    if (error instanceof StorageError) {
+      throw new CommunityPostError(error.code, error.message);
+    }
+    throw error;
   }
-
-  if (file.size > MAX_FILE_SIZE) {
-    throw new CommunityPostError("VALIDATION_ERROR", "File too large. Max 5MB");
-  }
-
-  if (!process.env.BLOB_READ_WRITE_TOKEN) {
-    throw new CommunityPostError(
-      "SERVICE_UNAVAILABLE",
-      "Image upload is not configured",
-    );
-  }
-
-  const blob = await put(
-    `community-post-images/${userId}/${file.name}`,
-    file,
-    {
-      access: "public",
-      addRandomSuffix: true,
-    },
-  );
-
-  return { imageUrl: blob.url };
 }

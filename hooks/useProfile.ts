@@ -2,16 +2,19 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
-import { apiClient, apiClientFormData } from "@/lib/api-client";
+import {
+  addSkillAction,
+  fetchProfileAction,
+  removeSkillAction,
+  updateProfileAction,
+  uploadAvatarAction,
+} from "@/lib/actions/profile";
 import type { ProfileUpdateInput, PublicProfile } from "@/types/profile";
 
 export function useProfile(userId: string | null) {
   return useQuery({
     queryKey: ["profile", userId],
-    queryFn: () =>
-      apiClient<PublicProfile>(
-        `/api/v1/profiles/${userId}?include=skills,stats`,
-      ),
+    queryFn: () => fetchProfileAction(userId!),
     enabled: !!userId,
     staleTime: 1000 * 60 * 5,
   });
@@ -21,11 +24,7 @@ export function useUpdateProfile(userId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (data: ProfileUpdateInput) =>
-      apiClient<PublicProfile>(`/api/v1/profiles/${userId}`, {
-        method: "PUT",
-        body: JSON.stringify(data),
-      }),
+    mutationFn: (data: ProfileUpdateInput) => updateProfileAction(userId, data),
     onSuccess: (updatedProfile) => {
       queryClient.setQueryData(["profile", userId], updatedProfile);
     },
@@ -37,10 +36,7 @@ export function useAddSkill(userId: string) {
 
   return useMutation({
     mutationFn: (data: { skillId?: string; skillName?: string }) =>
-      apiClient(`/api/v1/profiles/${userId}/skills`, {
-        method: "POST",
-        body: JSON.stringify(data),
-      }),
+      addSkillAction(userId, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["profile", userId] });
     },
@@ -51,10 +47,7 @@ export function useRemoveSkill(userId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (skillId: string) =>
-      apiClient(`/api/v1/profiles/${userId}/skills/${skillId}`, {
-        method: "DELETE",
-      }),
+    mutationFn: (skillId: string) => removeSkillAction(userId, skillId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["profile", userId] });
     },
@@ -68,10 +61,7 @@ export function useUploadAvatar(userId: string) {
     mutationFn: (file: File) => {
       const formData = new FormData();
       formData.append("file", file);
-      return apiClientFormData<{ profileImage: string }>(
-        `/api/v1/profiles/${userId}/avatar`,
-        formData,
-      );
+      return uploadAvatarAction(userId, formData);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["profile", userId] });

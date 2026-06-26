@@ -2,7 +2,11 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
-import { apiClient, apiClientFormData } from "@/lib/api-client";
+import {
+  createCommunityPostAction,
+  fetchCommunityPostsAction,
+  uploadCommunityPostImageAction,
+} from "@/lib/actions/community";
 import type { CreateCommunityPostInput } from "@/lib/validators/communityPostValidator";
 import type { CommunityPost, CommunityPostKind } from "@/types/communityPost";
 
@@ -11,13 +15,9 @@ export function communityPostsQueryKey(kind: CommunityPostKind | "all" = "all") 
 }
 
 export function useCommunityPosts(kind: CommunityPostKind | "all" = "all") {
-  const query =
-    kind === "all" ? "" : `?kind=${kind}`;
-
   return useQuery({
     queryKey: communityPostsQueryKey(kind),
-    queryFn: () =>
-      apiClient<CommunityPost[]>(`/api/v1/community/posts${query}`),
+    queryFn: () => fetchCommunityPostsAction(kind),
     staleTime: 1000 * 60 * 2,
   });
 }
@@ -27,10 +27,7 @@ export function useCreateCommunityPost() {
 
   return useMutation({
     mutationFn: (input: CreateCommunityPostInput) =>
-      apiClient<CommunityPost>("/api/v1/community/posts", {
-        method: "POST",
-        body: JSON.stringify(input),
-      }),
+      createCommunityPostAction(input),
     onSuccess: (post) => {
       for (const kind of ["all", post.kind] as const) {
         queryClient.setQueryData<CommunityPost[]>(
@@ -47,10 +44,7 @@ export function useUploadCommunityPostImage() {
     mutationFn: (file: File) => {
       const formData = new FormData();
       formData.append("file", file);
-      return apiClientFormData<{ imageUrl: string }>(
-        "/api/v1/community/posts/image",
-        formData,
-      );
+      return uploadCommunityPostImageAction(formData);
     },
   });
 }

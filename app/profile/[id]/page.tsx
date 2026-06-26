@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 
 import { ProfileView } from "@/components/profile/ProfileView";
-import { getPublicProfile } from "@/lib/services/profileService";
+import { getPublicProfile } from "@/lib/db/queries/profile";
 
 type PageProps = { params: Promise<{ id: string }> };
 

@@ -4,22 +4,23 @@ import { db } from "@/lib/db/client";
 import { users } from "@/lib/db/schema";
 import type { UserRole } from "@/types/auth";
 
-const NEON_MANAGED_PASSWORD = "neon-auth-managed";
+const AUTH_MANAGED_PASSWORD = "supabase-auth-managed";
 
-interface NeonUser {
+interface AuthProviderUser {
   id: string;
   email: string;
   name: string;
+  role?: UserRole;
 }
 
 export async function ensureAppUser(
-  neonUser: NeonUser,
+  authUser: AuthProviderUser,
   role?: UserRole,
 ) {
-  const email = neonUser.email.toLowerCase();
+  const email = authUser.email.toLowerCase();
 
   const existingById = await db.query.users.findFirst({
-    where: eq(users.id, neonUser.id),
+    where: eq(users.id, authUser.id),
   });
   if (existingById) return existingById;
 
@@ -28,12 +29,12 @@ export async function ensureAppUser(
   });
 
   if (existingByEmail) {
-    if (existingByEmail.id !== neonUser.id) {
+    if (existingByEmail.id !== authUser.id) {
       const [updated] = await db
         .update(users)
         .set({
-          id: neonUser.id,
-          name: neonUser.name,
+          id: authUser.id,
+          name: authUser.name,
           updatedAt: new Date(),
         })
         .where(eq(users.email, email))
@@ -46,11 +47,11 @@ export async function ensureAppUser(
   const [created] = await db
     .insert(users)
     .values({
-      id: neonUser.id,
+      id: authUser.id,
       email,
-      name: neonUser.name,
-      passwordHash: NEON_MANAGED_PASSWORD,
-      role: role ?? "student",
+      name: authUser.name,
+      passwordHash: AUTH_MANAGED_PASSWORD,
+      role: role ?? authUser.role ?? "student",
     })
     .returning();
 

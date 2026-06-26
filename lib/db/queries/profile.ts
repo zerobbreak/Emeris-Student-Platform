@@ -1,9 +1,12 @@
 import { createId } from "@paralleldrive/cuid2";
 import { and, eq } from "drizzle-orm";
-import { put } from "@vercel/blob";
 
 import { db } from "@/lib/db/client";
 import { skills, userSkills, users } from "@/lib/db/schema";
+import {
+  StorageError,
+  uploadPlatformImage,
+} from "@/lib/supabase/storage";
 import type { AddSkillInput, UpdateProfileInput } from "@/lib/validators/profileValidator";
 import type { ProfileStats, PublicProfile } from "@/types/profile";
 
@@ -206,39 +209,26 @@ export async function removeSkillFromProfile(
     );
 }
 
-const ALLOWED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp"];
-const MAX_FILE_SIZE = 5 * 1024 * 1024;
+function mapStorageError(error: unknown): never {
+  if (error instanceof StorageError) {
+    throw new ProfileError(error.code, error.message);
+  }
+  throw error;
+}
 
 export async function uploadAvatar(userId: string, file: File) {
-  if (!ALLOWED_IMAGE_TYPES.includes(file.type)) {
-    throw new ProfileError(
-      "VALIDATION_ERROR",
-      "Unsupported file format. Use JPEG, PNG, or WebP",
-    );
+  try {
+    const profileImage = await uploadPlatformImage(userId, "avatars", file);
+
+    await db
+      .update(users)
+      .set({ profileImage, updatedAt: new Date() })
+      .where(eq(users.id, userId));
+
+    return { profileImage };
+  } catch (error) {
+    mapStorageError(error);
   }
-
-  if (file.size > MAX_FILE_SIZE) {
-    throw new ProfileError("VALIDATION_ERROR", "File too large. Max 5MB");
-  }
-
-  if (!process.env.BLOB_READ_WRITE_TOKEN) {
-    throw new ProfileError(
-      "SERVICE_UNAVAILABLE",
-      "Avatar upload is not configured",
-    );
-  }
-
-  const blob = await put(`avatars/${userId}/${file.name}`, file, {
-    access: "public",
-    addRandomSuffix: true,
-  });
-
-  await db
-    .update(users)
-    .set({ profileImage: blob.url, updatedAt: new Date() })
-    .where(eq(users.id, userId));
-
-  return { profileImage: blob.url };
 }
 
 export class ProfileError extends Error {

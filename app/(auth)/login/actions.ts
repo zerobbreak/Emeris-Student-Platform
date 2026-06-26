@@ -2,9 +2,10 @@
 
 import { redirect } from "next/navigation";
 
-import { auth } from "@/lib/auth/server";
+import { getAuthProviderUser } from "@/lib/auth/supabase-user";
 import { getPostAuthRedirectPath } from "@/lib/onboarding/redirect";
-import { ensureAppUser } from "@/lib/services/userSync";
+import { ensureAppUser } from "@/lib/db/queries/user";
+import { createClient } from "@/lib/supabase/server";
 
 export async function signInWithEmail(
   _prevState: { error: string } | null,
@@ -13,22 +14,20 @@ export async function signInWithEmail(
   const email = formData.get("email") as string;
   const password = formData.get("password") as string;
 
-  const { error } = await auth.signIn.email({ email, password });
+  const supabase = await createClient();
+  const { error } = await supabase.auth.signInWithPassword({ email, password });
 
   if (error) {
-    if (error.code === "NETWORK_DNS") {
-      return { error: "Check NEON_AUTH_BASE_URL in .env.local" };
-    }
     return { error: error.message || "Invalid email or password" };
   }
 
-  const { data: session } = await auth.getSession();
-  if (session?.user) {
-    await ensureAppUser({
-      id: session.user.id,
-      email: session.user.email,
-      name: session.user.name,
-    });
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (user) {
+    const providerUser = getAuthProviderUser(user);
+    await ensureAppUser(providerUser, providerUser.role);
   }
 
   const postAuthPath = await getPostAuthRedirectPath();
@@ -41,6 +40,7 @@ export async function signInWithEmail(
 }
 
 export async function signOut() {
-  await auth.signOut();
+  const supabase = await createClient();
+  await supabase.auth.signOut();
   redirect("/login");
 }
