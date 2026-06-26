@@ -18,6 +18,20 @@ export const userRoleEnum = pgEnum("user_role", [
   "admin",
 ]);
 
+export const communityPostKindEnum = pgEnum("community_post_kind", [
+  "project",
+  "assistance",
+  "tip",
+]);
+
+export const hiveProjectStatusEnum = pgEnum("hive_project_status", [
+  "idea",
+  "planning",
+  "development",
+  "testing",
+  "completed",
+]);
+
 export const users = pgTable(
   "users",
   {
@@ -140,6 +154,43 @@ export const feedPosts = pgTable(
   ],
 );
 
+export const communityPosts = pgTable(
+  "community_posts",
+  {
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => createId()),
+    authorId: text("author_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    kind: communityPostKindEnum("kind").notNull(),
+    title: varchar("title", { length: 200 }).notNull(),
+    excerpt: text("excerpt").notNull(),
+    tags: text("tags").array().notNull(),
+    imageUrl: text("image_url"),
+    projectId: text("project_id"),
+    projectTitle: varchar("project_title", { length: 200 }),
+    projectStatus: hiveProjectStatusEnum("project_status"),
+    technologies: text("technologies").array(),
+    assistanceArea: varchar("assistance_area", { length: 200 }),
+    tipFocus: varchar("tip_focus", { length: 200 }),
+    likeCount: integer("like_count").default(0).notNull(),
+    commentCount: integer("comment_count").default(0).notNull(),
+    featured: boolean("featured").default(false).notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => [
+    index("idx_community_posts_author_id").on(table.authorId),
+    index("idx_community_posts_kind").on(table.kind),
+    index("idx_community_posts_created_at").on(table.createdAt),
+  ],
+);
+
 export const feedPostComments = pgTable(
   "feed_post_comments",
   {
@@ -171,6 +222,7 @@ export const usersRelations = relations(users, ({ many }) => ({
   userSkills: many(userSkills),
   feedPosts: many(feedPosts),
   feedPostComments: many(feedPostComments),
+  communityPosts: many(communityPosts),
 }));
 
 export const sessionsRelations = relations(sessions, ({ one }) => ({
@@ -216,3 +268,10 @@ export const feedPostCommentsRelations = relations(
     }),
   }),
 );
+
+export const communityPostsRelations = relations(communityPosts, ({ one }) => ({
+  author: one(users, {
+    fields: [communityPosts.authorId],
+    references: [users.id],
+  }),
+}));

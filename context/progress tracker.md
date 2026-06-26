@@ -12,8 +12,10 @@
 - **Avatar upload**: Vercel Blob integration (`BLOB_READ_WRITE_TOKEN`)
 - **Onboarding**: 4-step wizard; course picker uses IT codes (`BCAD`, `HCERT`, `HON`) via `lib/constants/itCourses.ts`
 - **Platform shell** (`app/(dashboard)/layout.tsx`): `PlatformShell` 3-panel layout on all dashboard child routes — `PlatformNavPanel` (left), `{children}` (center), `PlatformFeedPanel` (right)
-- **Platform home** (`/dashboard`): center `PlatformInfoHub` via `PlatformHome`
-- **Hive Community** (`/community`): center feed content via `CommunityHome` (mock data until Phase 2)
+- **Platform home** (`/dashboard`): cohort feed via `CommunityHome` with shared `PlatformPageHero`
+- **Hive Community** (`/community`): project listings, assistance requests, and tips via `CommunityProjectsFeed`
+- **Hive Projects** (`/hive-projects`): gallery with top projects, course filters, and field guides/sources for niche domains via `HiveProjectsHome` (mock data until Phase 2)
+- **Create post FAB**: expandable menu on `/dashboard` and `/community` — **Feed post** (`CreatePostDialog` → `feed_posts`) and **Project post** (`CreateProjectPostDialog` → `community_posts` with kind project/assistance/tip)
 
 ---
 
@@ -21,7 +23,7 @@
 
 - [ ] Expand Drizzle schema for **projects**, **certifications**, **achievements**, and **gamification** tables (Feature 02+)
 - [ ] Wire real **stats** on profile (currently stub zeros until projects/gamification exist)
-- [ ] Wire platform home module links when projects, skills board, and leaderboards ship
+- [ ] Wire platform home module links when skills board and leaderboards ship
 - [ ] Add **admin panel** route group (`/admin/*`) when Feature requirements land
 - [ ] Configure **`NEON_AUTH_BASE_URL`** from Neon Console (Project → Branch → Auth → Configuration) in `.env.local`
 
@@ -47,4 +49,4 @@
 - **Platform name**: HIVE Showcase Platform for EMERIS IT
 - **Auth flow**: Register → `/onboarding` → dashboard; login → `/dashboard`; public profiles at `/profile/[id]`
 - **Default seeded admin**: `admin@emeris.ac.uk` (password from `SEED_ADMIN_PASSWORD` in `.env.local`)
-- **Last updated**: June 2026 — Platform home feed (DB-backed posts & comments)
+- **Last updated**: June 2026 — Hive Projects gallery page (mock data, course filters)

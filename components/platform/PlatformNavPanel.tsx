@@ -26,7 +26,7 @@ function getInitials(name: string) {
 const platformModules = [
   {
     title: "Home",
-    description: "Your dashboard and overview",
+    description: "Your feed and cohort updates",
     href: "/dashboard",
     icon: LayoutDashboard,
     active: true,
@@ -34,7 +34,7 @@ const platformModules = [
   },
   {
     title: "Hive Community",
-    description: "Posts, tips, and cohort discussion",
+    description: "Projects, help requests, and tips",
     href: "/community",
     icon: MessageSquare,
     active: true,
@@ -43,8 +43,10 @@ const platformModules = [
   {
     title: "Hive Projects",
     description: "Coursework and personal builds",
+    href: "/hive-projects",
     icon: FolderKanban,
-    active: false,
+    active: true,
+    match: (path: string) => path.startsWith("/hive-projects"),
   },
   {
     title: "Skills Board",

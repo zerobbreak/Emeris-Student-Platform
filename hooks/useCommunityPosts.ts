@@ -1,0 +1,56 @@
+"use client";
+
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+
+import { apiClient, apiClientFormData } from "@/lib/api-client";
+import type { CreateCommunityPostInput } from "@/lib/validators/communityPostValidator";
+import type { CommunityPost, CommunityPostKind } from "@/types/communityPost";
+
+export function communityPostsQueryKey(kind: CommunityPostKind | "all" = "all") {
+  return ["community-posts", kind] as const;
+}
+
+export function useCommunityPosts(kind: CommunityPostKind | "all" = "all") {
+  const query =
+    kind === "all" ? "" : `?kind=${kind}`;
+
+  return useQuery({
+    queryKey: communityPostsQueryKey(kind),
+    queryFn: () =>
+      apiClient<CommunityPost[]>(`/api/v1/community/posts${query}`),
+    staleTime: 1000 * 60 * 2,
+  });
+}
+
+export function useCreateCommunityPost() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (input: CreateCommunityPostInput) =>
+      apiClient<CommunityPost>("/api/v1/community/posts", {
+        method: "POST",
+        body: JSON.stringify(input),
+      }),
+    onSuccess: (post) => {
+      for (const kind of ["all", post.kind] as const) {
+        queryClient.setQueryData<CommunityPost[]>(
+          communityPostsQueryKey(kind),
+          (current) => (current ? [post, ...current] : [post]),
+        );
+      }
+    },
+  });
+}
+
+export function useUploadCommunityPostImage() {
+  return useMutation({
+    mutationFn: (file: File) => {
+      const formData = new FormData();
+      formData.append("file", file);
+      return apiClientFormData<{ imageUrl: string }>(
+        "/api/v1/community/posts/image",
+        formData,
+      );
+    },
+  });
+}

@@ -1,5 +1,6 @@
 "use client";
 
+import { CreatePostFab } from "@/components/platform/CreatePostFab";
 import { PlatformFeedPanel } from "@/components/platform/PlatformFeedPanel";
 import { PlatformNavPanel } from "@/components/platform/PlatformNavPanel";
 import { useCurrentUser } from "@/hooks/useAuth";
@@ -47,7 +48,10 @@ export function PlatformShell({ children }: PlatformShellProps) {
           />
         </div>
 
-        <div className="min-h-0 min-w-0 overflow-y-auto">{children}</div>
+        <div className="relative min-h-0 min-w-0 overflow-hidden">
+          <div className="h-full overflow-y-auto">{children}</div>
+          <CreatePostFab />
+        </div>
 
         <div className="hidden min-h-0 overflow-hidden xl:block">
           <PlatformFeedPanel user={user} profileImage={profile?.profileImage} />

@@ -186,17 +186,17 @@ export function PlatformFeedPanel({ user: _user, profileImage: _profileImage }: 
         </Card>
 
         <Link
-          href="/community"
+          href="/hive-projects"
           className={cn(
             buttonVariants({ variant: "outline", size: "sm" }),
             "w-full border-primary/20 text-xs",
           )}
         >
-          Explore community posts
+          Browse Hive projects
         </Link>
 
         <p className="text-center text-[10px] text-muted-foreground">
-          Live trend tracking ships with Hive Projects in Phase 2
+          Live trend tracking ships in Phase 2
         </p>
         </div>
       </ScrollArea>

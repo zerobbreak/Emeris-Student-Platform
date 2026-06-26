@@ -22,6 +22,13 @@
       "when": 1782412819169,
       "tag": "0002_exotic_morlocks",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1782463653364,
+      "tag": "0003_dusty_victor_mancha",
+      "breakpoints": true
     }
   ]
 }
