@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
 import { AvatarUpload } from "@/components/profile/AvatarUpload";
@@ -59,6 +60,7 @@ function OnboardingFormContent({
   refetch,
 }: OnboardingFormContentProps) {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const updateProfile = useUpdateProfile(user.id);
   const addSkill = useAddSkill(user.id);
 
@@ -160,6 +162,8 @@ function OnboardingFormContent({
   async function handleComplete() {
     try {
       await updateProfile.mutateAsync({ isOnboarded: true });
+      // Invalidate the auth query so OnboardingGate sees the updated flag
+      await queryClient.invalidateQueries({ queryKey: ["auth", "user"] });
       toast.success("Profile setup complete!");
       router.push("/dashboard");
       router.refresh();

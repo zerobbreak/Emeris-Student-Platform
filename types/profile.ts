@@ -27,7 +27,7 @@ export interface PublicProfile {
   githubUrl: string | null;
   linkedinUrl: string | null;
   createdAt: string;
-  isOnboarded?: boolean;
+  isOnboarded: boolean;
   skills?: ProfileSkill[];
   stats?: ProfileStats;
 }

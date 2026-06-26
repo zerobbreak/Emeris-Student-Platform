@@ -5,7 +5,7 @@ export interface AuthUser {
   name: string;
   email: string;
   role: UserRole;
-  isOnboarded?: boolean;
+  isOnboarded: boolean;
 }
 
 export interface SessionPayload {
