@@ -4,15 +4,9 @@ import Link from "next/link";
 import { useActionState, useState } from "react";
 
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Separator } from "@/components/ui/separator";
 import {
   Select,
   SelectContent,
@@ -28,33 +22,68 @@ export function RegisterForm() {
   const [role, setRole] = useState<"student" | "lecturer">("student");
 
   return (
-    <Card className="w-full max-w-md">
-      <CardHeader>
-        <CardTitle>Create account</CardTitle>
-        <CardDescription>Join the HIVE Showcase platform</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <form action={formAction} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="name">Full name</Label>
-            <Input id="name" name="name" required />
+    <div className="w-full max-w-[400px]">
+      {/* Mobile-only branding */}
+      <div className="mb-8 text-center lg:hidden">
+        <h1 className="text-2xl font-bold text-primary">HIVE Showcase</h1>
+        <p className="mt-1 text-xs text-muted-foreground">
+          EMERIS student portfolio platform
+        </p>
+      </div>
+
+      <header className="mb-10">
+        <h2 className="text-2xl font-bold tracking-tight text-foreground">
+          Create your account
+        </h2>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Join the platform and start building your portfolio
+        </p>
+      </header>
+
+      <form action={formAction}>
+        <div className="flex flex-col gap-5">
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="register-name">Full name</Label>
+            <Input
+              id="register-name"
+              name="name"
+              placeholder="Jane Doe"
+              required
+            />
           </div>
-          <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
-            <Input id="email" name="email" type="email" required />
+
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="register-email">Email</Label>
+            <Input
+              id="register-email"
+              name="email"
+              type="email"
+              placeholder="you@university.edu"
+              required
+            />
           </div>
-          <div className="space-y-2">
-            <Label htmlFor="password">Password</Label>
-            <Input id="password" name="password" type="password" required />
+
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="register-password">Password</Label>
+            <Input
+              id="register-password"
+              name="password"
+              type="password"
+              placeholder="••••••••"
+              required
+            />
           </div>
-          <div className="space-y-2">
-            <Label htmlFor="role">Role</Label>
+
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="register-role">I am a</Label>
             <input type="hidden" name="role" value={role} />
             <Select
               value={role}
-              onValueChange={(v) => v && setRole(v as "student" | "lecturer")}
+              onValueChange={(v) =>
+                v && setRole(v as "student" | "lecturer")
+              }
             >
-              <SelectTrigger>
+              <SelectTrigger id="register-role">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -63,20 +92,30 @@ export function RegisterForm() {
               </SelectContent>
             </Select>
           </div>
+
           {state?.error && (
-            <p className="text-sm text-destructive">{state.error}</p>
+            <p className="text-[0.8125rem] text-destructive">{state.error}</p>
           )}
-          <Button type="submit" className="w-full" disabled={isPending}>
-            {isPending ? "Creating account..." : "Register"}
+
+          <Button
+            type="submit"
+            size="lg"
+            className="mt-2 w-full"
+            disabled={isPending}
+          >
+            {isPending ? "Creating account…" : "Create account"}
           </Button>
-        </form>
-        <p className="mt-4 text-center text-sm text-muted-foreground">
-          Already have an account?{" "}
-          <Link href="/login" className="text-primary hover:underline">
-            Sign in
-          </Link>
-        </p>
-      </CardContent>
-    </Card>
+        </div>
+      </form>
+
+      <Separator className="my-6" />
+
+      <p className="mt-6 text-center text-[0.8125rem] text-muted-foreground">
+        Already have an account?{" "}
+        <Link href="/login" className="font-medium text-primary hover:underline">
+          Sign in
+        </Link>
+      </p>
+    </div>
   );
 }
