@@ -44,8 +44,5 @@ export async function signUpWithEmail(
     redirect("/onboarding");
   }
 
-  return {
-    error:
-      "Account created. Check your email to confirm your address, then sign in.",
-  };
+  redirect("/verify-email?type=signup");
 }
