@@ -103,6 +103,46 @@ export const skills = pgTable(
   (table) => [index("idx_skills_category").on(table.category)],
 );
 
+export const resourceTypeEnum = pgEnum("resource_type", [
+  "article",
+  "video",
+  "course",
+  "tutorial",
+]);
+
+export const resources = pgTable(
+  "resources",
+  {
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => createId()),
+    title: varchar("title", { length: 255 }).notNull(),
+    description: text("description"),
+    type: resourceTypeEnum("type").default("article").notNull(),
+    url: text("url").notNull(),
+    readTime: varchar("read_time", { length: 50 }),
+    skillId: text("skill_id")
+      .notNull()
+      .references(() => skills.id, { onDelete: "cascade" }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => [
+    index("idx_resources_skill_id").on(table.skillId),
+    index("idx_resources_type").on(table.type),
+  ],
+);
+
+export const userSkillStatusEnum = pgEnum("user_skill_status", [
+  "to_learn",
+  "learning",
+  "mastered",
+]);
+
 export const userSkills = pgTable(
   "user_skills",
   {
@@ -115,6 +155,7 @@ export const userSkills = pgTable(
     skillId: text("skill_id")
       .notNull()
       .references(() => skills.id, { onDelete: "cascade" }),
+    status: userSkillStatusEnum("status").default("to_learn").notNull(),
     endorsementCount: integer("endorsement_count").default(0).notNull(),
     addedAt: timestamp("added_at", { withTimezone: true })
       .defaultNow()
@@ -234,6 +275,14 @@ export const sessionsRelations = relations(sessions, ({ one }) => ({
 
 export const skillsRelations = relations(skills, ({ many }) => ({
   userSkills: many(userSkills),
+  resources: many(resources),
+}));
+
+export const resourcesRelations = relations(resources, ({ one }) => ({
+  skill: one(skills, {
+    fields: [resources.skillId],
+    references: [skills.id],
+  }),
 }));
 
 export const userSkillsRelations = relations(userSkills, ({ one }) => ({

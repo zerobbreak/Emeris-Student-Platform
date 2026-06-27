@@ -1,0 +1,2 @@
+CREATE TYPE "public"."user_skill_status" AS ENUM('to_learn', 'learning', 'mastered');--> statement-breakpoint
+ALTER TABLE "user_skills" ADD COLUMN "status" "user_skill_status" DEFAULT 'to_learn' NOT NULL;

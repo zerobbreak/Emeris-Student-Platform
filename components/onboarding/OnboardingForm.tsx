@@ -74,6 +74,7 @@ function OnboardingFormContent({
   const [selectedSkills, setSelectedSkills] = useState<string[]>(
     () => profile.skills?.map((s) => s.name) ?? [],
   );
+  const [isSaving, setIsSaving] = useState(false);
 
   function draftProfile(): PublicProfile {
     return {
@@ -122,6 +123,7 @@ function OnboardingFormContent({
   }
 
   async function handleNext() {
+    setIsSaving(true);
     try {
       if (step === 1) {
         if (!course || !year) {
@@ -156,10 +158,13 @@ function OnboardingFormContent({
       }
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Save failed");
+    } finally {
+      setIsSaving(false);
     }
   }
 
   async function handleComplete() {
+    setIsSaving(true);
     try {
       await updateProfile.mutateAsync({ isOnboarded: true });
       // Invalidate the auth query so OnboardingGate sees the updated flag
@@ -169,6 +174,7 @@ function OnboardingFormContent({
       router.refresh();
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Failed to complete");
+      setIsSaving(false);
     }
   }
 
@@ -319,6 +325,7 @@ function OnboardingFormContent({
             type="button"
             variant="outline"
             onClick={() => setStep(step - 1)}
+            disabled={isSaving}
           >
             Back
           </Button>
@@ -327,7 +334,7 @@ function OnboardingFormContent({
         )}
         <div className="flex gap-2">
           {(step === 2 || step === 4) && (
-            <Button type="button" variant="ghost" onClick={handleSkip}>
+            <Button type="button" variant="ghost" onClick={handleSkip} disabled={isSaving}>
               Skip
             </Button>
           )}
@@ -335,17 +342,17 @@ function OnboardingFormContent({
             <Button
               type="button"
               onClick={handleNext}
-              disabled={updateProfile.isPending || addSkill.isPending}
+              disabled={isSaving}
             >
-              Continue
+              {isSaving ? "Saving..." : "Continue"}
             </Button>
           ) : (
             <Button
               type="button"
               onClick={handleComplete}
-              disabled={!canFinish || updateProfile.isPending}
+              disabled={!canFinish || isSaving}
             >
-              Finish
+              {isSaving ? "Completing..." : "Finish"}
             </Button>
           )}
         </div>

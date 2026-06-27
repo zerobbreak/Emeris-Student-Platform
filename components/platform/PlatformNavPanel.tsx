@@ -8,6 +8,7 @@ import {
   MessageSquare,
   Sparkles,
   Trophy,
+  Library,
 } from "lucide-react";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -51,14 +52,24 @@ const platformModules = [
   {
     title: "Skills Board",
     description: "Track skills and endorsements",
+    href: "/skills",
     icon: Sparkles,
-    active: false,
+    active: true,
+    match: (path: string) => path.startsWith("/skills"),
   },
   {
     title: "Leaderboards",
     description: "Points, projects, and recognition",
     icon: Trophy,
     active: false,
+  },
+  {
+    title: "Resources",
+    description: "Learn and develop your skills",
+    href: "/resources",
+    icon: Library,
+    active: true,
+    match: (path: string) => path.startsWith("/resources"),
   },
 ] as const;
 

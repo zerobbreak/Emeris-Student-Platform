@@ -1,5 +1,6 @@
 "use server";
 
+import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 
 import { getAuthProviderUser } from "@/lib/auth/supabase-user";
@@ -23,6 +24,11 @@ export async function signUpWithEmail(
   const appRole = role === "lecturer" ? "lecturer" : "student";
   const supabase = await createClient();
 
+  const headersList = await headers();
+  const host = headersList.get("host") || "localhost:3000";
+  const protocol = host.includes("localhost") ? "http" : "https";
+  const origin = `${protocol}://${host}`;
+
   const { data, error } = await supabase.auth.signUp({
     email,
     password,
@@ -31,6 +37,7 @@ export async function signUpWithEmail(
         name,
         role: appRole,
       },
+      emailRedirectTo: `${origin}/auth/callback?next=/email-confirmed`,
     },
   });
 
