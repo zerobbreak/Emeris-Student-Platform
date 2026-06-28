@@ -1,7 +1,7 @@
-import { desc, eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 
 import { db } from "@/lib/db/client";
-import { communityPostComments, communityPosts } from "@/lib/db/schema";
+import { communityPostComments, communityPostLikes, communityPosts } from "@/lib/db/schema";
 import {
   StorageError,
   uploadPlatformImage,
@@ -60,7 +60,7 @@ function mapCommunityPost(row: {
     course: string | null;
     year: number | null;
   };
-}): CommunityPost {
+}, hasLiked: boolean = false): CommunityPost {
   return {
     id: row.id,
     kind: row.kind,
@@ -76,6 +76,7 @@ function mapCommunityPost(row: {
     tipFocus: row.tipFocus,
     likeCount: row.likeCount,
     commentCount: row.commentCount,
+    hasLiked,
     featured: row.featured,
     createdAt: row.createdAt.toISOString(),
     author: mapAuthor(row.author),
@@ -84,6 +85,7 @@ function mapCommunityPost(row: {
 
 export async function getCommunityPosts(
   kind?: CommunityPostKind | "all",
+  currentUserId?: string,
 ): Promise<CommunityPost[]> {
   const rows = await db.query.communityPosts.findMany({
     where: (posts, { eq }) =>
@@ -92,11 +94,27 @@ export async function getCommunityPosts(
     with: { author: true },
   });
 
-  return rows.map(mapCommunityPost);
+  if (!rows.length) return [];
+
+  let likedPostIds = new Set<string>();
+  if (currentUserId) {
+    const likes = await db.query.communityPostLikes.findMany({
+      where: (likes, { and, eq, inArray }) =>
+        and(
+          eq(likes.userId, currentUserId),
+          inArray(likes.postId, rows.map((r) => r.id))
+        ),
+      columns: { postId: true },
+    });
+    likedPostIds = new Set(likes.map((l) => l.postId));
+  }
+
+  return rows.map((row) => mapCommunityPost(row, likedPostIds.has(row.id)));
 }
 
 export async function getCommunityPostById(
   id: string,
+  currentUserId?: string,
 ): Promise<CommunityPost | null> {
   const row = await db.query.communityPosts.findFirst({
     where: (posts, { eq }) => eq(posts.id, id),
@@ -107,7 +125,16 @@ export async function getCommunityPostById(
     return null;
   }
 
-  return mapCommunityPost(row);
+  let hasLiked = false;
+  if (currentUserId) {
+    const like = await db.query.communityPostLikes.findFirst({
+      where: (likes, { and, eq }) =>
+        and(eq(likes.userId, currentUserId), eq(likes.postId, id)),
+    });
+    hasLiked = !!like;
+  }
+
+  return mapCommunityPost(row, hasLiked);
 }
 
 function mapCommunityPostComment(row: {
@@ -243,5 +270,49 @@ export async function uploadCommunityPostImage(userId: string, file: File) {
       throw new CommunityPostError(error.code, error.message);
     }
     throw error;
+  }
+}
+
+export async function toggleCommunityPostLike(userId: string, postId: string) {
+  const existingLike = await db.query.communityPostLikes.findFirst({
+    where: (likes, { and, eq }) =>
+      and(eq(likes.userId, userId), eq(likes.postId, postId)),
+  });
+
+  const post = await getCommunityPostById(postId);
+  if (!post) {
+    throw new CommunityPostError("NOT_FOUND", "Post not found");
+  }
+
+  if (existingLike) {
+    await db
+      .delete(communityPostLikes)
+      .where(
+        and(
+          eq(communityPostLikes.userId, userId),
+          eq(communityPostLikes.postId, postId),
+        ),
+      );
+    
+    const newCount = Math.max(0, post.likeCount - 1);
+    await db
+      .update(communityPosts)
+      .set({ likeCount: newCount })
+      .where(eq(communityPosts.id, postId));
+
+    return { hasLiked: false, likeCount: newCount };
+  } else {
+    await db.insert(communityPostLikes).values({
+      userId,
+      postId,
+    });
+
+    const newCount = post.likeCount + 1;
+    await db
+      .update(communityPosts)
+      .set({ likeCount: newCount })
+      .where(eq(communityPosts.id, postId));
+
+    return { hasLiked: true, likeCount: newCount };
   }
 }

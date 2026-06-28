@@ -21,7 +21,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { useCurrentUser } from "@/hooks/useAuth";
-import { useCommunityPosts } from "@/hooks/useCommunityPosts";
+import { useCommunityPosts, useToggleCommunityPostLike } from "@/hooks/useCommunityPosts";
 import { formatRelativeTime } from "@/lib/constants/communityFeed";
 import type { CommunityPostFilter } from "@/lib/constants/communityProjectPosts";
 import { getCourseLabel } from "@/lib/constants/itCourses";
@@ -89,6 +89,12 @@ export function PostCard({ post }: { post: CommunityPost }) {
   const referencedProject = post.projectId
     ? hiveProjects.find((item) => item.id === post.projectId)
     : undefined;
+
+  const { mutate: toggleLike, isPending: isLiking } = useToggleCommunityPostLike();
+
+  const handleLike = () => {
+    toggleLike(post.id);
+  };
 
   return (
     <Card
@@ -221,10 +227,14 @@ export function PostCard({ post }: { post: CommunityPost }) {
             <Button
               variant="ghost"
               size="sm"
-              className="text-muted-foreground hover:text-primary"
-              disabled
+              className={cn(
+                "text-muted-foreground hover:text-primary",
+                post.hasLiked && "text-red-500 hover:text-red-600"
+              )}
+              onClick={handleLike}
+              disabled={isLiking}
             >
-              <Heart className="size-4" />
+              <Heart className={cn("size-4", post.hasLiked && "fill-current")} />
               {post.likeCount}
             </Button>
             <Link href={`/community/${post.id}`}>

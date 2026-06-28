@@ -8,6 +8,7 @@ import {
   getCommunityPostComments,
   getCommunityPosts,
   uploadCommunityPostImage,
+  toggleCommunityPostLike,
 } from "@/lib/db/queries/community";
 import { createCommunityPostSchema } from "@/lib/validators/communityPostValidator";
 import type { CreateCommunityPostInput } from "@/lib/validators/communityPostValidator";
@@ -19,8 +20,8 @@ import { ActionError } from "@/lib/errors";
 export async function fetchCommunityPostsAction(
   kind: CommunityPostKind | "all" = "all",
 ): Promise<CommunityPost[]> {
-  await requireSession();
-  return getCommunityPosts(kind);
+  const session = await requireSession();
+  return getCommunityPosts(kind, session.userId);
 }
 
 export async function createCommunityPostAction(
@@ -64,8 +65,8 @@ export async function uploadCommunityPostImageAction(formData: FormData) {
 export async function fetchCommunityPostAction(
   id: string,
 ): Promise<CommunityPost | null> {
-  await requireSession();
-  return getCommunityPostById(id);
+  const session = await requireSession();
+  return getCommunityPostById(id, session.userId);
 }
 
 export async function fetchCommunityPostCommentsAction(
@@ -89,6 +90,19 @@ export async function addCommunityPostCommentAction(
 
   try {
     return await createCommunityPostComment(session.userId, postId, text, replyToId, threadId);
+  } catch (error) {
+    if (error instanceof CommunityPostError) {
+      throw new ActionError(error.code, error.message);
+    }
+    throw error;
+  }
+}
+
+export async function toggleCommunityPostLikeAction(postId: string) {
+  const session = await requireSession();
+  
+  try {
+    return await toggleCommunityPostLike(session.userId, postId);
   } catch (error) {
     if (error instanceof CommunityPostError) {
       throw new ActionError(error.code, error.message);

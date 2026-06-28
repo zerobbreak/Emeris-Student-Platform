@@ -1,9 +1,12 @@
 import Link from "next/link";
+import { getSession } from "@/lib/auth/session";
 
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
-export default function HomePage() {
+export default async function HomePage() {
+  const session = await getSession();
+
   return (
     <div className="flex flex-1 flex-col items-center justify-center px-4 py-24 text-center">
       <h1 className="text-4xl font-bold text-primary">HIVE Showcase</h1>
@@ -12,15 +15,23 @@ export default function HomePage() {
         skills profile, and earn recognition.
       </p>
       <div className="mt-8 flex gap-4">
-        <Link href="/register" className={cn(buttonVariants({ size: "lg" }))}>
-          Get started
-        </Link>
-        <Link
-          href="/login"
-          className={cn(buttonVariants({ variant: "outline", size: "lg" }))}
-        >
-          Sign in
-        </Link>
+        {session ? (
+          <Link href="/dashboard" className={cn(buttonVariants({ size: "lg" }))}>
+            Go to Platform
+          </Link>
+        ) : (
+          <>
+            <Link href="/register" className={cn(buttonVariants({ size: "lg" }))}>
+              Get started
+            </Link>
+            <Link
+              href="/login"
+              className={cn(buttonVariants({ variant: "outline", size: "lg" }))}
+            >
+              Sign in
+            </Link>
+          </>
+        )}
       </div>
     </div>
   );

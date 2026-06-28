@@ -38,6 +38,7 @@ export type CommunityPost = {
   tipFocus: string | null;
   likeCount: number;
   commentCount: number;
+  hasLiked: boolean;
   featured: boolean;
   createdAt: string;
   author: CommunityPostAuthor;

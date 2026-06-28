@@ -10,6 +10,7 @@ import {
   timestamp,
   uniqueIndex,
   varchar,
+  primaryKey,
 } from "drizzle-orm/pg-core";
 
 export const userRoleEnum = pgEnum("user_role", [
@@ -288,6 +289,25 @@ export const communityPostComments = pgTable(
   ],
 );
 
+export const communityPostLikes = pgTable(
+  "community_post_likes",
+  {
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    postId: text("post_id")
+      .notNull()
+      .references(() => communityPosts.id, { onDelete: "cascade" }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => [
+    primaryKey({ columns: [table.userId, table.postId] }),
+    index("idx_community_post_likes_post_id").on(table.postId),
+  ],
+);
+
 export const usersRelations = relations(users, ({ many }) => ({
   sessions: many(sessions),
   userSkills: many(userSkills),
@@ -295,6 +315,7 @@ export const usersRelations = relations(users, ({ many }) => ({
   feedPostComments: many(feedPostComments),
   communityPosts: many(communityPosts),
   communityPostComments: many(communityPostComments),
+  communityPostLikes: many(communityPostLikes),
 }));
 
 export const sessionsRelations = relations(sessions, ({ one }) => ({
@@ -371,7 +392,22 @@ export const communityPostsRelations = relations(communityPosts, ({ one, many })
     references: [users.id],
   }),
   comments: many(communityPostComments),
+  likes: many(communityPostLikes),
 }));
+
+export const communityPostLikesRelations = relations(
+  communityPostLikes,
+  ({ one }) => ({
+    post: one(communityPosts, {
+      fields: [communityPostLikes.postId],
+      references: [communityPosts.id],
+    }),
+    user: one(users, {
+      fields: [communityPostLikes.userId],
+      references: [users.id],
+    }),
+  }),
+);
 
 export const communityPostCommentsRelations = relations(
   communityPostComments,

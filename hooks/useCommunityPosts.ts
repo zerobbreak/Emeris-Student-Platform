@@ -9,6 +9,7 @@ import {
   fetchCommunityPostCommentsAction,
   fetchCommunityPostsAction,
   uploadCommunityPostImageAction,
+  toggleCommunityPostLikeAction,
 } from "@/lib/actions/community";
 import type { CreateCommunityPostInput } from "@/lib/validators/communityPostValidator";
 import type { CommunityPost, CommunityPostComment, CommunityPostKind } from "@/types/communityPost";
@@ -99,6 +100,65 @@ export function useCreateCommunityPostComment() {
       );
       
       // Also invalidate the post so commentCount updates
+      queryClient.invalidateQueries({ queryKey: communityPostQueryKey(postId) });
+      queryClient.invalidateQueries({ queryKey: communityPostsQueryKey("all") });
+    },
+  });
+}
+
+export function useToggleCommunityPostLike() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (postId: string) => toggleCommunityPostLikeAction(postId),
+    onMutate: async (postId) => {
+      // Cancel any outgoing refetches so they don't overwrite our optimistic update
+      await queryClient.cancelQueries({ queryKey: communityPostsQueryKey("all") });
+      await queryClient.cancelQueries({ queryKey: communityPostQueryKey(postId) });
+
+      // Optimistically update the individual post
+      const previousPost = queryClient.getQueryData<CommunityPost>(communityPostQueryKey(postId));
+      if (previousPost) {
+        queryClient.setQueryData<CommunityPost>(communityPostQueryKey(postId), {
+          ...previousPost,
+          hasLiked: !previousPost.hasLiked,
+          likeCount: previousPost.hasLiked ? Math.max(0, previousPost.likeCount - 1) : previousPost.likeCount + 1,
+        });
+      }
+
+      // Optimistically update the post in the lists
+      const updateList = (kind: CommunityPostKind | "all") => {
+        queryClient.setQueryData<CommunityPost[]>(communityPostsQueryKey(kind), (old) => {
+          if (!old) return old;
+          return old.map((post) => {
+            if (post.id === postId) {
+              return {
+                ...post,
+                hasLiked: !post.hasLiked,
+                likeCount: post.hasLiked ? Math.max(0, post.likeCount - 1) : post.likeCount + 1,
+              };
+            }
+            return post;
+          });
+        });
+      };
+
+      updateList("all");
+      updateList("assistance");
+      updateList("project");
+      updateList("tip");
+
+      return { previousPost };
+    },
+    onError: (err, postId, context) => {
+      // If the mutation fails, use the context returned from onMutate to roll back
+      if (context?.previousPost) {
+        queryClient.setQueryData(communityPostQueryKey(postId), context.previousPost);
+      }
+      queryClient.invalidateQueries({ queryKey: communityPostsQueryKey("all") });
+    },
+    onSettled: (data, err, postId) => {
+      // Always refetch after error or success to ensure we have the correct server state
       queryClient.invalidateQueries({ queryKey: communityPostQueryKey(postId) });
       queryClient.invalidateQueries({ queryKey: communityPostsQueryKey("all") });
     },
