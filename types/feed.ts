@@ -13,6 +13,8 @@ export type FeedComment = {
   likeCount: number;
   dislikeCount: number;
   likedByCreator: boolean;
+  replyToId: string | null;
+  threadId: string | null;
   createdAt: string;
   author: FeedAuthor;
 };

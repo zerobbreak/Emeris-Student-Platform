@@ -58,6 +58,8 @@ function mapFeedPost(row: {
     likeCount: number;
     dislikeCount: number;
     likedByCreator: boolean;
+    replyToId: string | null;
+    threadId: string | null;
     createdAt: Date;
     author: {
       id: string;
@@ -85,6 +87,8 @@ function mapFeedPost(row: {
         likeCount: comment.likeCount,
         dislikeCount: comment.dislikeCount,
         likedByCreator: comment.likedByCreator,
+        replyToId: comment.replyToId,
+        threadId: comment.threadId,
         createdAt: comment.createdAt.toISOString(),
         author: mapAuthor(comment.author),
       }),
@@ -94,7 +98,7 @@ function mapFeedPost(row: {
 
 export async function getFeedPosts(): Promise<FeedPost[]> {
   const rows = await db.query.feedPosts.findMany({
-    orderBy: [desc(feedPosts.createdAt)],
+    orderBy: (posts, { desc }) => [desc(posts.createdAt)],
     with: {
       author: true,
       comments: {
@@ -123,7 +127,7 @@ export async function createFeedPost(
     .returning({ id: feedPosts.id });
 
   const row = await db.query.feedPosts.findFirst({
-    where: eq(feedPosts.id, inserted.id),
+    where: (posts, { eq }) => eq(posts.id, inserted.id),
     with: {
       author: true,
       comments: {
@@ -142,7 +146,7 @@ export async function createFeedPost(
 
 export async function getFeedPostById(id: string): Promise<FeedPost | null> {
   const row = await db.query.feedPosts.findFirst({
-    where: eq(feedPosts.id, id),
+    where: (posts, { eq }) => eq(posts.id, id),
     with: {
       author: true,
       comments: {
@@ -163,6 +167,8 @@ export async function createFeedPostComment(
   authorId: string,
   postId: string,
   text: string,
+  replyToId?: string | null,
+  threadId?: string | null,
 ): Promise<FeedComment> {
   const [inserted] = await db
     .insert(feedPostComments)
@@ -170,6 +176,8 @@ export async function createFeedPostComment(
       authorId,
       postId,
       text: text.trim(),
+      replyToId: replyToId || null,
+      threadId: threadId || null,
     })
     .returning({ id: feedPostComments.id });
 
@@ -183,7 +191,7 @@ export async function createFeedPostComment(
   }
 
   const row = await db.query.feedPostComments.findFirst({
-    where: eq(feedPostComments.id, inserted.id),
+    where: (comments, { eq }) => eq(comments.id, inserted.id),
     with: { author: true },
   });
 
@@ -198,6 +206,8 @@ export async function createFeedPostComment(
     likeCount: row.likeCount,
     dislikeCount: row.dislikeCount,
     likedByCreator: row.likedByCreator,
+    replyToId: row.replyToId,
+    threadId: row.threadId,
     createdAt: row.createdAt.toISOString(),
     author: mapAuthor(row.author),
   };

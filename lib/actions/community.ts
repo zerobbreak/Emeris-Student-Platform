@@ -1,5 +1,6 @@
 "use server";
 
+import {
   CommunityPostError,
   createCommunityPost,
   createCommunityPostComment,
@@ -77,6 +78,8 @@ export async function fetchCommunityPostCommentsAction(
 export async function addCommunityPostCommentAction(
   postId: string,
   text: string,
+  replyToId?: string | null,
+  threadId?: string | null,
 ): Promise<CommunityPostComment> {
   const session = await requireSession();
   
@@ -85,7 +88,7 @@ export async function addCommunityPostCommentAction(
   }
 
   try {
-    return await createCommunityPostComment(session.userId, postId, text);
+    return await createCommunityPostComment(session.userId, postId, text, replyToId, threadId);
   } catch (error) {
     if (error instanceof CommunityPostError) {
       throw new ActionError(error.code, error.message);

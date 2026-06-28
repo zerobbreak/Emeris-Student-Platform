@@ -26,10 +26,8 @@ import type { FeedPost } from "@/types/feed";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
 
-type PlatformFeedProps = {
-  user: { id: string; name: string };
-  profileImage?: string | null;
-};
+import { useCurrentUser } from "@/hooks/useAuth";
+import { useProfile } from "@/hooks/useProfile";
 
 function getInitials(name: string) {
   return name
@@ -76,22 +74,26 @@ function FeedPostCard({ post }: { post: FeedPost }) {
                 · {formatRelativeTime(post.createdAt)}
               </Link>
             </div>
-            <p className="whitespace-pre-wrap text-sm leading-relaxed text-foreground">
-              {post.text}
-            </p>
+            <Link href={`/feed/${post.id}`} className="block mt-1.5 hover:opacity-80 transition-opacity">
+              <p className="whitespace-pre-wrap text-sm leading-relaxed text-foreground">
+                {post.text}
+              </p>
+            </Link>
           </div>
         </div>
 
         {post.imageUrl && (
-          <div className="relative aspect-[16/9] overflow-hidden rounded-lg border border-primary/10 bg-muted">
-            <Image
-              src={post.imageUrl}
-              alt="Post attachment"
-              fill
-              className="object-cover"
-              sizes="(max-width: 768px) 100vw, 640px"
-            />
-          </div>
+          <Link href={`/feed/${post.id}`} className="block">
+            <div className="relative aspect-[16/9] overflow-hidden rounded-lg border border-primary/10 bg-muted hover:opacity-90 transition-opacity">
+              <Image
+                src={post.imageUrl}
+                alt="Post attachment"
+                fill
+                className="object-cover"
+                sizes="(max-width: 768px) 100vw, 640px"
+              />
+            </div>
+          </Link>
         )}
 
         <div className="flex flex-wrap items-center justify-between gap-2">
@@ -114,16 +116,16 @@ function FeedPostCard({ post }: { post: FeedPost }) {
               <ThumbsDown className="size-4" />
               {post.dislikeCount}
             </Button>
-            <Link href={`/feed/${post.id}`}>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-8 gap-1.5 text-muted-foreground hover:text-primary"
-              >
-                <MessageCircle className="size-4" />
-                {post.commentCount}
-              </Button>
-            </Link>
+            <Button
+              render={<Link href={`/feed/${post.id}`} />}
+              nativeButton={false}
+              variant="ghost"
+              size="sm"
+              className="h-8 gap-1.5 text-muted-foreground hover:text-primary"
+            >
+              <MessageCircle className="size-4" />
+              {post.commentCount}
+            </Button>
           </div>
         </div>
 
@@ -143,8 +145,15 @@ function FeedSkeleton() {
   );
 }
 
-export function PlatformFeed({ user, profileImage }: PlatformFeedProps) {
+export function PlatformFeed() {
   const { data: posts, isLoading, isError } = useFeed();
+  const { data: user } = useCurrentUser();
+  const { data: profile } = useProfile(user?.id ?? null);
+
+  if (!user) {
+    return null;
+  }
+
   const firstName = user.name.split(" ")[0] ?? "there";
 
   return (
@@ -164,7 +173,7 @@ export function PlatformFeed({ user, profileImage }: PlatformFeedProps) {
             <div className="flex items-start gap-3">
               <Avatar className="size-10">
                 <AvatarImage
-                  src={profileImage ?? undefined}
+                  src={profile?.profileImage ?? undefined}
                   alt={user.name}
                 />
                 <AvatarFallback className="bg-primary/10 text-primary">

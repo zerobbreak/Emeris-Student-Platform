@@ -61,6 +61,17 @@ export default function CommunityPostDetailsPage(props: { params: Promise<{ id: 
     );
   };
 
+  const isPostCreator = user?.id === post.author.id;
+
+  const topLevelComments = comments.filter((c) => !c.replyToId);
+  const repliesByParent = comments.reduce((acc, c) => {
+    if (c.replyToId) {
+      if (!acc[c.replyToId]) acc[c.replyToId] = [];
+      acc[c.replyToId].push(c);
+    }
+    return acc;
+  }, {} as Record<string, typeof comments>);
+
   return (
     <div className="mx-auto max-w-3xl py-6 space-y-6">
       <div className="mb-4">
@@ -79,29 +90,31 @@ export default function CommunityPostDetailsPage(props: { params: Promise<{ id: 
         <h3 className="text-xl font-semibold">Comments ({comments.length})</h3>
 
         {/* Comment Input */}
-        <div className="flex flex-col gap-3 rounded-xl border border-border/40 bg-background/50 p-4 shadow-sm">
-          <Textarea
-            placeholder="Add to the discussion..."
-            className="min-h-[100px] resize-y bg-background"
-            value={commentText}
-            onChange={(e) => setCommentText(e.target.value)}
-          />
-          <div className="flex justify-end">
-            <Button
-              onClick={handleSubmitComment}
-              disabled={!commentText.trim() || isAddingComment}
-              size="sm"
-              className="gap-2"
-            >
-              {isAddingComment ? (
-                <Loader2 className="size-4 animate-spin" />
-              ) : (
-                <Send className="size-4" />
-              )}
-              Post Comment
-            </Button>
+        {!isPostCreator && (
+          <div className="flex flex-col gap-3 rounded-xl border border-border/40 bg-background/50 p-4 shadow-sm">
+            <Textarea
+              placeholder="Add to the discussion..."
+              className="min-h-[100px] resize-y bg-background"
+              value={commentText}
+              onChange={(e) => setCommentText(e.target.value)}
+            />
+            <div className="flex justify-end">
+              <Button
+                onClick={handleSubmitComment}
+                disabled={!commentText.trim() || isAddingComment}
+                size="sm"
+                className="gap-2"
+              >
+                {isAddingComment ? (
+                  <Loader2 className="size-4 animate-spin" />
+                ) : (
+                  <Send className="size-4" />
+                )}
+                Post Comment
+              </Button>
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Comments List */}
         <div className="space-y-4">
@@ -114,8 +127,14 @@ export default function CommunityPostDetailsPage(props: { params: Promise<{ id: 
               No comments yet. Be the first to start the conversation!
             </div>
           ) : (
-            comments.map((comment) => (
-              <CommunityPostCommentItem key={comment.id} comment={comment} />
+            topLevelComments.map((comment) => (
+              <CommunityPostCommentItem 
+                key={comment.id} 
+                comment={comment}
+                repliesByParent={repliesByParent}
+                postId={postId}
+                postAuthorName={post.author.name}
+              />
             ))
           )}
         </div>

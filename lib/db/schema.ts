@@ -248,6 +248,8 @@ export const feedPostComments = pgTable(
     likeCount: integer("like_count").default(0).notNull(),
     dislikeCount: integer("dislike_count").default(0).notNull(),
     likedByCreator: boolean("liked_by_creator").default(false).notNull(),
+    replyToId: text("reply_to_id"),
+    threadId: text("thread_id"),
     createdAt: timestamp("created_at", { withTimezone: true })
       .defaultNow()
       .notNull(),
@@ -274,6 +276,8 @@ export const communityPostComments = pgTable(
     likeCount: integer("like_count").default(0).notNull(),
     dislikeCount: integer("dislike_count").default(0).notNull(),
     likedByCreator: boolean("liked_by_creator").default(false).notNull(),
+    replyToId: text("reply_to_id"),
+    threadId: text("thread_id"),
     createdAt: timestamp("created_at", { withTimezone: true })
       .defaultNow()
       .notNull(),
@@ -333,7 +337,7 @@ export const feedPostsRelations = relations(feedPosts, ({ one, many }) => ({
 
 export const feedPostCommentsRelations = relations(
   feedPostComments,
-  ({ one }) => ({
+  ({ one, many }) => ({
     post: one(feedPosts, {
       fields: [feedPostComments.postId],
       references: [feedPosts.id],
@@ -341,6 +345,22 @@ export const feedPostCommentsRelations = relations(
     author: one(users, {
       fields: [feedPostComments.authorId],
       references: [users.id],
+    }),
+    parentComment: one(feedPostComments, {
+      fields: [feedPostComments.replyToId],
+      references: [feedPostComments.id],
+      relationName: "feed_post_replies",
+    }),
+    replies: many(feedPostComments, {
+      relationName: "feed_post_replies",
+    }),
+    threadRoot: one(feedPostComments, {
+      fields: [feedPostComments.threadId],
+      references: [feedPostComments.id],
+      relationName: "feed_post_thread",
+    }),
+    threadComments: many(feedPostComments, {
+      relationName: "feed_post_thread",
     }),
   }),
 );
@@ -355,7 +375,7 @@ export const communityPostsRelations = relations(communityPosts, ({ one, many })
 
 export const communityPostCommentsRelations = relations(
   communityPostComments,
-  ({ one }) => ({
+  ({ one, many }) => ({
     post: one(communityPosts, {
       fields: [communityPostComments.postId],
       references: [communityPosts.id],
@@ -363,6 +383,22 @@ export const communityPostCommentsRelations = relations(
     author: one(users, {
       fields: [communityPostComments.authorId],
       references: [users.id],
+    }),
+    parentComment: one(communityPostComments, {
+      fields: [communityPostComments.replyToId],
+      references: [communityPostComments.id],
+      relationName: "community_post_replies",
+    }),
+    replies: many(communityPostComments, {
+      relationName: "community_post_replies",
+    }),
+    threadRoot: one(communityPostComments, {
+      fields: [communityPostComments.threadId],
+      references: [communityPostComments.id],
+      relationName: "community_post_thread",
+    }),
+    threadComments: many(communityPostComments, {
+      relationName: "community_post_thread",
     }),
   }),
 );

@@ -80,8 +80,17 @@ export function useCreateCommunityPostComment() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ postId, text }: { postId: string; text: string }) =>
-      addCommunityPostCommentAction(postId, text),
+    mutationFn: ({
+      postId,
+      text,
+      replyToId,
+      threadId,
+    }: {
+      postId: string;
+      text: string;
+      replyToId?: string | null;
+      threadId?: string | null;
+    }) => addCommunityPostCommentAction(postId, text, replyToId, threadId),
     onSuccess: (comment, { postId }) => {
       // Update comments list
       queryClient.setQueryData<CommunityPostComment[]>(

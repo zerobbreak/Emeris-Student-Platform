@@ -1,5 +1,5 @@
-import { CommunityHome } from "@/components/platform/CommunityHome";
+import { PlatformFeed } from "@/components/platform/PlatformFeed";
 
 export default function DashboardPage() {
-  return <CommunityHome />;
+  return <PlatformFeed />;
 }

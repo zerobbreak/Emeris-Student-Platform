@@ -2,7 +2,7 @@
 
 import { use, useState } from "react";
 import Link from "next/link";
-import { ChevronLeft, Loader2, Send } from "lucide-react";
+import { ChevronLeft, Loader2, Send, CornerDownRight } from "lucide-react";
 import Image from "next/image";
 import { Heart, MessageCircle, ThumbsDown, ThumbsUp } from "lucide-react";
 
@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
+import { FeedPostCommentItem } from "@/components/platform/FeedPostComment";
 
 import { useFeedPost, useCreateFeedPostComment } from "@/hooks/useFeed";
 import { useCurrentUser } from "@/hooks/useAuth";
@@ -43,6 +44,8 @@ export default function FeedPostDetailsPage(props: { params: Promise<{ id: strin
   const { mutate: addComment, isPending: isAddingComment } = useCreateFeedPostComment();
 
   const [commentText, setCommentText] = useState("");
+  const [replyingTo, setReplyingTo] = useState<string | null>(null);
+  const [replyText, setReplyText] = useState("");
 
   if (isPostLoading) {
     return (
@@ -80,6 +83,17 @@ export default function FeedPostDetailsPage(props: { params: Promise<{ id: strin
   };
 
   const subtitle = authorSubtitle(post.author);
+
+  const topLevelComments = post.comments.filter((c) => !c.replyToId);
+  const repliesByParent = post.comments.reduce((acc, c) => {
+    if (c.replyToId) {
+      if (!acc[c.replyToId]) acc[c.replyToId] = [];
+      acc[c.replyToId].push(c);
+    }
+    return acc;
+  }, {} as Record<string, typeof post.comments>);
+
+  const isPostCreator = user?.id === post.author.id;
 
   return (
     <div className="mx-auto max-w-3xl py-6 space-y-6">
@@ -169,30 +183,32 @@ export default function FeedPostDetailsPage(props: { params: Promise<{ id: strin
       <div className="mt-8 space-y-6">
         <h3 className="text-xl font-semibold">Comments ({post.comments.length})</h3>
 
-        {/* Comment Input */}
-        <div className="flex flex-col gap-3 rounded-xl border border-border/40 bg-background/50 p-4 shadow-sm">
-          <Textarea
-            placeholder="Write a comment..."
-            className="min-h-[100px] resize-y bg-background"
-            value={commentText}
-            onChange={(e) => setCommentText(e.target.value)}
-          />
-          <div className="flex justify-end">
-            <Button
-              onClick={handleSubmitComment}
-              disabled={!commentText.trim() || isAddingComment}
-              size="sm"
-              className="gap-2"
-            >
-              {isAddingComment ? (
-                <Loader2 className="size-4 animate-spin" />
-              ) : (
-                <Send className="size-4" />
-              )}
-              Post Comment
-            </Button>
+        {/* Comment Input (Hidden for post creator) */}
+        {!isPostCreator && (
+          <div className="flex flex-col gap-3 rounded-xl border border-border/40 bg-background/50 p-4 shadow-sm">
+            <Textarea
+              placeholder="Write a comment..."
+              className="min-h-[100px] resize-y bg-background"
+              value={commentText}
+              onChange={(e) => setCommentText(e.target.value)}
+            />
+            <div className="flex justify-end">
+              <Button
+                onClick={handleSubmitComment}
+                disabled={!commentText.trim() || isAddingComment}
+                size="sm"
+                className="gap-2"
+              >
+                {isAddingComment && !replyingTo ? (
+                  <Loader2 className="size-4 animate-spin" />
+                ) : (
+                  <Send className="size-4" />
+                )}
+                Post Comment
+              </Button>
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Comments List */}
         <div className="space-y-4">
@@ -201,49 +217,14 @@ export default function FeedPostDetailsPage(props: { params: Promise<{ id: strin
               No comments yet. Be the first to start the conversation!
             </div>
           ) : (
-            post.comments.map((comment) => (
-              <div key={comment.id} className="flex gap-4 p-4 rounded-xl border border-border/40 bg-background hover:bg-muted/30 transition-colors">
-                <Avatar className="size-8 shrink-0">
-                  <AvatarImage
-                    src={comment.author.profileImage ?? undefined}
-                    alt={comment.author.name}
-                  />
-                  <AvatarFallback className="bg-primary/10 text-[10px] text-primary">
-                    {getInitials(comment.author.name)}
-                  </AvatarFallback>
-                </Avatar>
-                
-                <div className="min-w-0 flex-1 space-y-1.5">
-                  <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
-                    <span className="text-sm font-semibold">{comment.author.name}</span>
-                    <span className="text-[10px] text-muted-foreground">
-                      {formatRelativeTime(comment.createdAt)}
-                    </span>
-                    {comment.likedByCreator && (
-                      <Badge
-                        variant="secondary"
-                        className="h-4 border-0 bg-secondary/20 px-1.5 text-[9px] text-secondary-foreground"
-                      >
-                        <Heart className="size-2.5 fill-current" />
-                        Liked by creator
-                      </Badge>
-                    )}
-                  </div>
-                  <p className="mt-1 text-sm leading-relaxed text-foreground whitespace-pre-wrap">
-                    {comment.text}
-                  </p>
-                  <div className="flex items-center gap-3 px-1 mt-2 text-[11px] text-muted-foreground">
-                    <span className="inline-flex items-center gap-1">
-                      <ThumbsUp className="size-3" />
-                      {comment.likeCount}
-                    </span>
-                    <span className="inline-flex items-center gap-1">
-                      <ThumbsDown className="size-3" />
-                      {comment.dislikeCount}
-                    </span>
-                  </div>
-                </div>
-              </div>
+            topLevelComments.map((comment) => (
+              <FeedPostCommentItem 
+                key={comment.id} 
+                comment={comment}
+                repliesByParent={repliesByParent}
+                postId={postId}
+                postAuthorName={post.author.name}
+              />
             ))
           )}
         </div>

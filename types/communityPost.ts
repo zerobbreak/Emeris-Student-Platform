@@ -17,6 +17,8 @@ export type CommunityPostComment = {
   likeCount: number;
   dislikeCount: number;
   likedByCreator: boolean;
+  replyToId: string | null;
+  threadId: string | null;
   createdAt: string;
   author: CommunityPostAuthor;
 };

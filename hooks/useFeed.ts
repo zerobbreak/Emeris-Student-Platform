@@ -49,8 +49,17 @@ export function useCreateFeedPostComment() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ postId, text }: { postId: string; text: string }) =>
-      addFeedPostCommentAction(postId, text),
+    mutationFn: ({
+      postId,
+      text,
+      replyToId,
+      threadId,
+    }: {
+      postId: string;
+      text: string;
+      replyToId?: string | null;
+      threadId?: string | null;
+    }) => addFeedPostCommentAction(postId, text, replyToId, threadId),
     onSuccess: (comment, { postId }) => {
       // Invalidate the specific post so it fetches the new comment and updated commentCount
       queryClient.invalidateQueries({ queryKey: feedPostQueryKey(postId) });

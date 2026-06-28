@@ -104,11 +104,9 @@ export function ResourcesBoard({ initialResources }: { initialResources: Resourc
                 </div>
               </CardContent>
               <CardFooter className="pt-0">
-                <Button variant="secondary" className="w-full group" asChild>
-                  <a href={resource.url} target="_blank" rel="noreferrer">
-                    View Resource
-                    <ExternalLink className="ml-2 size-3 opacity-50 group-hover:opacity-100 transition-opacity" />
-                  </a>
+                <Button variant="secondary" className="w-full group" nativeButton={false} render={<a href={resource.url} target="_blank" rel="noreferrer" />}>
+                  View Resource
+                  <ExternalLink className="ml-2 size-3 opacity-50 group-hover:opacity-100 transition-opacity" />
                 </Button>
               </CardFooter>
             </Card>

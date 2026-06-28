@@ -1,5 +1,6 @@
 "use server";
 
+import {
   FeedError,
   createFeedPost,
   createFeedPostComment,
@@ -67,6 +68,8 @@ export async function fetchFeedPostAction(
 export async function addFeedPostCommentAction(
   postId: string,
   text: string,
+  replyToId?: string | null,
+  threadId?: string | null,
 ): Promise<FeedComment> {
   const session = await requireSession();
   
@@ -75,7 +78,7 @@ export async function addFeedPostCommentAction(
   }
 
   try {
-    return await createFeedPostComment(session.userId, postId, text);
+    return await createFeedPostComment(session.userId, postId, text, replyToId, threadId);
   } catch (error) {
     if (error instanceof FeedError) {
       throw new ActionError(error.code, error.message);
