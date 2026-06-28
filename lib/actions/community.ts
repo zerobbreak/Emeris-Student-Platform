@@ -9,6 +9,9 @@ import {
   getCommunityPosts,
   uploadCommunityPostImage,
   toggleCommunityPostLike,
+  toggleCommunityPostDislike,
+  toggleCommunityPostCommentLike,
+  toggleCommunityPostCommentDislike,
 } from "@/lib/db/queries/community";
 import { createCommunityPostSchema } from "@/lib/validators/communityPostValidator";
 import type { CreateCommunityPostInput } from "@/lib/validators/communityPostValidator";
@@ -72,8 +75,8 @@ export async function fetchCommunityPostAction(
 export async function fetchCommunityPostCommentsAction(
   postId: string,
 ): Promise<CommunityPostComment[]> {
-  await requireSession();
-  return getCommunityPostComments(postId);
+  const session = await requireSession();
+  return getCommunityPostComments(postId, session.userId);
 }
 
 export async function addCommunityPostCommentAction(
@@ -103,6 +106,45 @@ export async function toggleCommunityPostLikeAction(postId: string) {
   
   try {
     return await toggleCommunityPostLike(session.userId, postId);
+  } catch (error) {
+    if (error instanceof CommunityPostError) {
+      throw new ActionError(error.code, error.message);
+    }
+    throw error;
+  }
+}
+
+export async function toggleCommunityPostCommentLikeAction(commentId: string) {
+  const session = await requireSession();
+
+  try {
+    return await toggleCommunityPostCommentLike(session.userId, commentId);
+  } catch (error) {
+    if (error instanceof CommunityPostError) {
+      throw new ActionError(error.code, error.message);
+    }
+    throw error;
+  }
+}
+
+export async function toggleCommunityPostDislikeAction(postId: string) {
+  const session = await requireSession();
+  
+  try {
+    return await toggleCommunityPostDislike(session.userId, postId);
+  } catch (error) {
+    if (error instanceof CommunityPostError) {
+      throw new ActionError(error.code, error.message);
+    }
+    throw error;
+  }
+}
+
+export async function toggleCommunityPostCommentDislikeAction(commentId: string) {
+  const session = await requireSession();
+
+  try {
+    return await toggleCommunityPostCommentDislike(session.userId, commentId);
   } catch (error) {
     if (error instanceof CommunityPostError) {
       throw new ActionError(error.code, error.message);

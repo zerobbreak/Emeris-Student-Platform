@@ -1,7 +1,7 @@
 import { and, eq } from "drizzle-orm";
 
 import { db } from "@/lib/db/client";
-import { communityPostComments, communityPostLikes, communityPosts } from "@/lib/db/schema";
+import { communityPostCommentDislikes, communityPostCommentLikes, communityPostComments, communityPostDislikes, communityPostLikes, communityPosts } from "@/lib/db/schema";
 import {
   StorageError,
   uploadPlatformImage,
@@ -50,6 +50,7 @@ function mapCommunityPost(row: {
   assistanceArea: string | null;
   tipFocus: string | null;
   likeCount: number;
+  dislikeCount: number;
   commentCount: number;
   featured: boolean;
   createdAt: Date;
@@ -60,7 +61,7 @@ function mapCommunityPost(row: {
     course: string | null;
     year: number | null;
   };
-}, hasLiked: boolean = false): CommunityPost {
+}, hasLiked: boolean = false, hasDisliked: boolean = false): CommunityPost {
   return {
     id: row.id,
     kind: row.kind,
@@ -75,8 +76,10 @@ function mapCommunityPost(row: {
     assistanceArea: row.assistanceArea,
     tipFocus: row.tipFocus,
     likeCount: row.likeCount,
+    dislikeCount: row.dislikeCount,
     commentCount: row.commentCount,
     hasLiked,
+    hasDisliked,
     featured: row.featured,
     createdAt: row.createdAt.toISOString(),
     author: mapAuthor(row.author),
@@ -97,19 +100,31 @@ export async function getCommunityPosts(
   if (!rows.length) return [];
 
   let likedPostIds = new Set<string>();
+  let dislikedPostIds = new Set<string>();
   if (currentUserId) {
+    const postIds = rows.map((r) => r.id);
     const likes = await db.query.communityPostLikes.findMany({
       where: (likes, { and, eq, inArray }) =>
         and(
           eq(likes.userId, currentUserId),
-          inArray(likes.postId, rows.map((r) => r.id))
+          inArray(likes.postId, postIds)
         ),
       columns: { postId: true },
     });
     likedPostIds = new Set(likes.map((l) => l.postId));
+
+    const dislikes = await db.query.communityPostDislikes.findMany({
+      where: (dislikes, { and, eq, inArray }) =>
+        and(
+          eq(dislikes.userId, currentUserId),
+          inArray(dislikes.postId, postIds)
+        ),
+      columns: { postId: true },
+    });
+    dislikedPostIds = new Set(dislikes.map((d) => d.postId));
   }
 
-  return rows.map((row) => mapCommunityPost(row, likedPostIds.has(row.id)));
+  return rows.map((row) => mapCommunityPost(row, likedPostIds.has(row.id), dislikedPostIds.has(row.id)));
 }
 
 export async function getCommunityPostById(
@@ -126,15 +141,22 @@ export async function getCommunityPostById(
   }
 
   let hasLiked = false;
+  let hasDisliked = false;
   if (currentUserId) {
     const like = await db.query.communityPostLikes.findFirst({
       where: (likes, { and, eq }) =>
         and(eq(likes.userId, currentUserId), eq(likes.postId, id)),
     });
     hasLiked = !!like;
+
+    const dislike = await db.query.communityPostDislikes.findFirst({
+      where: (dislikes, { and, eq }) =>
+        and(eq(dislikes.userId, currentUserId), eq(dislikes.postId, id)),
+    });
+    hasDisliked = !!dislike;
   }
 
-  return mapCommunityPost(row, hasLiked);
+  return mapCommunityPost(row, hasLiked, hasDisliked);
 }
 
 function mapCommunityPostComment(row: {
@@ -154,7 +176,7 @@ function mapCommunityPostComment(row: {
     course: string | null;
     year: number | null;
   };
-}): CommunityPostComment {
+}, hasLiked: boolean = false, hasDisliked: boolean = false): CommunityPostComment {
   return {
     id: row.id,
     postId: row.postId,
@@ -162,6 +184,8 @@ function mapCommunityPostComment(row: {
     likeCount: row.likeCount,
     dislikeCount: row.dislikeCount,
     likedByCreator: row.likedByCreator,
+    hasLiked,
+    hasDisliked,
     replyToId: row.replyToId,
     threadId: row.threadId,
     createdAt: row.createdAt.toISOString(),
@@ -171,6 +195,7 @@ function mapCommunityPostComment(row: {
 
 export async function getCommunityPostComments(
   postId: string,
+  currentUserId?: string,
 ): Promise<CommunityPostComment[]> {
   const rows = await db.query.communityPostComments.findMany({
     where: (comments, { eq }) => eq(comments.postId, postId),
@@ -178,7 +203,26 @@ export async function getCommunityPostComments(
     with: { author: true },
   });
 
-  return rows.map(mapCommunityPostComment);
+  if (!rows.length) return [];
+
+  let userCommentLikes = new Set<string>();
+  let userCommentDislikes = new Set<string>();
+  if (currentUserId) {
+    const commentIds = rows.map((c) => c.id);
+    const cLikes = await db.query.communityPostCommentLikes.findMany({
+      where: (likes, { eq, and, inArray }) =>
+        and(eq(likes.userId, currentUserId), inArray(likes.commentId, commentIds)),
+    });
+    userCommentLikes = new Set(cLikes.map((l) => l.commentId));
+
+    const cDislikes = await db.query.communityPostCommentDislikes.findMany({
+      where: (dislikes, { eq, and, inArray }) =>
+        and(eq(dislikes.userId, currentUserId), inArray(dislikes.commentId, commentIds)),
+    });
+    userCommentDislikes = new Set(cDislikes.map((d) => d.commentId));
+  }
+
+  return rows.map((row) => mapCommunityPostComment(row, userCommentLikes.has(row.id), userCommentDislikes.has(row.id)));
 }
 
 export async function createCommunityPost(
@@ -314,5 +358,160 @@ export async function toggleCommunityPostLike(userId: string, postId: string) {
       .where(eq(communityPosts.id, postId));
 
     return { hasLiked: true, likeCount: newCount };
+  }
+}
+
+export async function toggleCommunityPostCommentLike(
+  userId: string,
+  commentId: string,
+): Promise<{ hasLiked: boolean; likeCount: number; likedByCreator: boolean }> {
+  const comment = await db.query.communityPostComments.findFirst({
+    where: (comments, { eq }) => eq(comments.id, commentId),
+  });
+
+  if (!comment) {
+    throw new CommunityPostError("NOT_FOUND", "Comment not found");
+  }
+
+  const post = await db.query.communityPosts.findFirst({
+    where: (posts, { eq }) => eq(posts.id, comment.postId),
+  });
+
+  const isCreator = post?.authorId === userId;
+
+  const existingLike = await db.query.communityPostCommentLikes.findFirst({
+    where: (likes, { eq, and }) =>
+      and(eq(likes.userId, userId), eq(likes.commentId, commentId)),
+  });
+
+  let newLikeCount = comment.likeCount;
+  let newLikedByCreator = comment.likedByCreator;
+
+  if (existingLike) {
+    await db
+      .delete(communityPostCommentLikes)
+      .where(
+        and(eq(communityPostCommentLikes.userId, userId), eq(communityPostCommentLikes.commentId, commentId)),
+      );
+
+    newLikeCount = Math.max(0, comment.likeCount - 1);
+    if (isCreator) newLikedByCreator = false;
+
+    await db
+      .update(communityPostComments)
+      .set({ likeCount: newLikeCount, likedByCreator: newLikedByCreator })
+      .where(eq(communityPostComments.id, commentId));
+
+    return { hasLiked: false, likeCount: newLikeCount, likedByCreator: newLikedByCreator };
+  } else {
+    await db.insert(communityPostCommentLikes).values({
+      userId,
+      commentId,
+    });
+
+    newLikeCount = comment.likeCount + 1;
+    if (isCreator) newLikedByCreator = true;
+
+    await db
+      .update(communityPostComments)
+      .set({ likeCount: newLikeCount, likedByCreator: newLikedByCreator })
+      .where(eq(communityPostComments.id, commentId));
+
+    return { hasLiked: true, likeCount: newLikeCount, likedByCreator: newLikedByCreator };
+  }
+}
+
+export async function toggleCommunityPostDislike(userId: string, postId: string) {
+  const existingDislike = await db.query.communityPostDislikes.findFirst({
+    where: (dislikes, { and, eq }) =>
+      and(eq(dislikes.userId, userId), eq(dislikes.postId, postId)),
+  });
+
+  const post = await getCommunityPostById(postId);
+  if (!post) {
+    throw new CommunityPostError("NOT_FOUND", "Post not found");
+  }
+
+  if (existingDislike) {
+    await db
+      .delete(communityPostDislikes)
+      .where(
+        and(
+          eq(communityPostDislikes.userId, userId),
+          eq(communityPostDislikes.postId, postId),
+        ),
+      );
+    
+    const newCount = Math.max(0, (post.dislikeCount || 0) - 1);
+    await db
+      .update(communityPosts)
+      .set({ dislikeCount: newCount })
+      .where(eq(communityPosts.id, postId));
+
+    return { hasDisliked: false, dislikeCount: newCount };
+  } else {
+    await db.insert(communityPostDislikes).values({
+      userId,
+      postId,
+    });
+
+    const newCount = (post.dislikeCount || 0) + 1;
+    await db
+      .update(communityPosts)
+      .set({ dislikeCount: newCount })
+      .where(eq(communityPosts.id, postId));
+
+    return { hasDisliked: true, dislikeCount: newCount };
+  }
+}
+
+export async function toggleCommunityPostCommentDislike(
+  userId: string,
+  commentId: string,
+): Promise<{ hasDisliked: boolean; dislikeCount: number }> {
+  const comment = await db.query.communityPostComments.findFirst({
+    where: (comments, { eq }) => eq(comments.id, commentId),
+  });
+
+  if (!comment) {
+    throw new CommunityPostError("NOT_FOUND", "Comment not found");
+  }
+
+  const existingDislike = await db.query.communityPostCommentDislikes.findFirst({
+    where: (dislikes, { eq, and }) =>
+      and(eq(dislikes.userId, userId), eq(dislikes.commentId, commentId)),
+  });
+
+  let newDislikeCount = comment.dislikeCount;
+
+  if (existingDislike) {
+    await db
+      .delete(communityPostCommentDislikes)
+      .where(
+        and(eq(communityPostCommentDislikes.userId, userId), eq(communityPostCommentDislikes.commentId, commentId)),
+      );
+
+    newDislikeCount = Math.max(0, comment.dislikeCount - 1);
+
+    await db
+      .update(communityPostComments)
+      .set({ dislikeCount: newDislikeCount })
+      .where(eq(communityPostComments.id, commentId));
+
+    return { hasDisliked: false, dislikeCount: newDislikeCount };
+  } else {
+    await db.insert(communityPostCommentDislikes).values({
+      userId,
+      commentId,
+    });
+
+    newDislikeCount = comment.dislikeCount + 1;
+
+    await db
+      .update(communityPostComments)
+      .set({ dislikeCount: newDislikeCount })
+      .where(eq(communityPostComments.id, commentId));
+
+    return { hasDisliked: true, dislikeCount: newDislikeCount };
   }
 }

@@ -17,6 +17,8 @@ export type CommunityPostComment = {
   likeCount: number;
   dislikeCount: number;
   likedByCreator: boolean;
+  hasLiked?: boolean;
+  hasDisliked?: boolean;
   replyToId: string | null;
   threadId: string | null;
   createdAt: string;
@@ -37,8 +39,10 @@ export type CommunityPost = {
   assistanceArea: string | null;
   tipFocus: string | null;
   likeCount: number;
+  dislikeCount?: number;
   commentCount: number;
   hasLiked: boolean;
+  hasDisliked?: boolean;
   featured: boolean;
   createdAt: string;
   author: CommunityPostAuthor;

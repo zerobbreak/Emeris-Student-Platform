@@ -19,7 +19,7 @@ import {
 } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
-import { useFeed, useToggleFeedPostLike } from "@/hooks/useFeed";
+import { useFeed, useToggleFeedPostLike, useToggleFeedPostDislike } from "@/hooks/useFeed";
 import { getCourseLabel } from "@/lib/constants/itCourses";
 import { formatRelativeTime } from "@/lib/constants/communityFeed";
 import type { FeedPost } from "@/types/feed";
@@ -51,6 +51,7 @@ function authorSubtitle(author: FeedPost["author"]) {
 function FeedPostCard({ post }: { post: FeedPost }) {
   const subtitle = authorSubtitle(post.author);
   const { mutate: toggleLike, isPending: isLiking } = useToggleFeedPostLike();
+  const { mutate: toggleDislike, isPending: isDisliking } = useToggleFeedPostDislike();
 
   return (
     <Card className="border-primary/10 transition hover:border-primary/20">
@@ -118,10 +119,17 @@ function FeedPostCard({ post }: { post: FeedPost }) {
             <Button
               variant="ghost"
               size="sm"
-              className="h-8 gap-1.5 text-muted-foreground"
-              disabled
+              className={cn(
+                "h-8 gap-1.5 text-muted-foreground hover:text-primary",
+                post.hasDisliked && "text-red-500 hover:text-red-600",
+                isDisliking && "pointer-events-none"
+              )}
+              onClick={(e) => {
+                e.preventDefault();
+                toggleDislike(post.id);
+              }}
             >
-              <ThumbsDown className="size-4" />
+              <ThumbsDown className={cn("size-4", post.hasDisliked && "fill-current")} />
               {post.dislikeCount}
             </Button>
             <Button

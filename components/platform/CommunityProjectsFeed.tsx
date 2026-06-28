@@ -9,6 +9,7 @@ import {
   Heart,
   Lightbulb,
   MessageCircle,
+  ThumbsDown,
   Users,
 } from "lucide-react";
 
@@ -21,7 +22,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { useCurrentUser } from "@/hooks/useAuth";
-import { useCommunityPosts, useToggleCommunityPostLike } from "@/hooks/useCommunityPosts";
+import { useCommunityPosts, useToggleCommunityPostLike, useToggleCommunityPostDislike } from "@/hooks/useCommunityPosts";
 import { formatRelativeTime } from "@/lib/constants/communityFeed";
 import type { CommunityPostFilter } from "@/lib/constants/communityProjectPosts";
 import { getCourseLabel } from "@/lib/constants/itCourses";
@@ -91,9 +92,14 @@ export function PostCard({ post }: { post: CommunityPost }) {
     : undefined;
 
   const { mutate: toggleLike, isPending: isLiking } = useToggleCommunityPostLike();
+  const { mutate: toggleDislike, isPending: isDisliking } = useToggleCommunityPostDislike();
 
   const handleLike = () => {
     toggleLike(post.id);
+  };
+
+  const handleDislike = () => {
+    toggleDislike(post.id);
   };
 
   return (
@@ -239,6 +245,22 @@ export function PostCard({ post }: { post: CommunityPost }) {
             >
               <Heart className={cn("size-4", post.hasLiked && "fill-current")} />
               {post.likeCount}
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              className={cn(
+                "text-muted-foreground hover:text-primary",
+                post.hasDisliked && "text-red-500 hover:text-red-600",
+                isDisliking && "pointer-events-none"
+              )}
+              onClick={(e) => {
+                e.preventDefault();
+                handleDislike();
+              }}
+            >
+              <ThumbsDown className={cn("size-4", post.hasDisliked && "fill-current")} />
+              {post.dislikeCount}
             </Button>
             <Link href={`/community/${post.id}`}>
               <Button

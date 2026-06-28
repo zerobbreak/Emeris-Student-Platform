@@ -4,11 +4,12 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { formatRelativeTime } from "@/lib/constants/communityFeed";
 import type { CommunityPostComment } from "@/types/communityPost";
 import { getCourseLabel } from "@/lib/constants/itCourses";
-import { ThumbsUp, ThumbsDown, Send, Loader2 } from "lucide-react";
+import { Heart, ThumbsUp, ThumbsDown, Send, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useState } from "react";
-import { useCreateCommunityPostComment } from "@/hooks/useCommunityPosts";
+import { useCreateCommunityPostComment, useToggleCommunityPostCommentLike, useToggleCommunityPostCommentDislike } from "@/hooks/useCommunityPosts";
+import { Badge } from "@/components/ui/badge";
 
 function getInitials(name: string) {
   return name
@@ -41,6 +42,16 @@ export function CommunityPostCommentItem({
   const [isReplying, setIsReplying] = useState(false);
   const [replyText, setReplyText] = useState("");
   const { mutate: addComment, isPending: isAddingComment } = useCreateCommunityPostComment();
+  const { mutate: toggleLike, isPending: isTogglingLike } = useToggleCommunityPostCommentLike();
+  const { mutate: toggleDislike, isPending: isTogglingDislike } = useToggleCommunityPostCommentDislike();
+
+  const handleLike = () => {
+    toggleLike({ postId, commentId: comment.id });
+  };
+
+  const handleDislike = () => {
+    toggleDislike({ postId, commentId: comment.id });
+  };
 
   const handleReplySubmit = () => {
     if (!replyText.trim()) return;
@@ -84,6 +95,15 @@ export function CommunityPostCommentItem({
           <span className="text-xs text-muted-foreground">
             · {formatRelativeTime(comment.createdAt)}
           </span>
+          {comment.likedByCreator && (
+            <Badge
+              variant="secondary"
+              className="h-4 border-0 bg-secondary/20 px-1.5 text-[9px] text-secondary-foreground"
+            >
+              <Heart className="size-2.5 fill-current" />
+              Liked by creator
+            </Badge>
+          )}
         </div>
         
         <p className="text-sm leading-relaxed text-foreground mt-2 whitespace-pre-wrap">
@@ -92,14 +112,22 @@ export function CommunityPostCommentItem({
 
         <div className="flex items-center gap-4 mt-2">
           <div className="flex items-center gap-3 px-1 text-[11px] text-muted-foreground">
-            <span className="inline-flex items-center gap-1">
-              <ThumbsUp className="size-3" />
+            <button 
+              className={`inline-flex items-center gap-1 transition-colors hover:text-primary disabled:opacity-50 ${comment.hasLiked ? 'text-primary' : ''}`}
+              onClick={handleLike}
+              disabled={isTogglingLike}
+            >
+              <ThumbsUp className={`size-3 ${comment.hasLiked ? 'fill-current' : ''}`} />
               {comment.likeCount}
-            </span>
-            <span className="inline-flex items-center gap-1">
-              <ThumbsDown className="size-3" />
+            </button>
+            <button 
+              className={`inline-flex items-center gap-1 transition-colors hover:text-red-500 disabled:opacity-50 ${comment.hasDisliked ? 'text-red-500' : ''}`}
+              onClick={handleDislike}
+              disabled={isTogglingDislike}
+            >
+              <ThumbsDown className={`size-3 ${comment.hasDisliked ? 'fill-current' : ''}`} />
               {comment.dislikeCount}
-            </span>
+            </button>
           </div>
           <button
             className="text-[11px] font-medium text-muted-foreground hover:text-primary transition-colors"

@@ -9,6 +9,9 @@ import {
   fetchFeedPostAction,
   uploadFeedImageAction,
   toggleFeedPostLikeAction,
+  toggleFeedPostDislikeAction,
+  toggleFeedPostCommentLikeAction,
+  toggleFeedPostCommentDislikeAction,
 } from "@/lib/actions/feed";
 import type { CreateFeedPostInput } from "@/lib/validators/feedValidator";
 import type { FeedComment, FeedPost } from "@/types/feed";
@@ -121,6 +124,91 @@ export function useToggleFeedPostLike() {
       queryClient.invalidateQueries({ queryKey: ["feed"] });
     },
     onSettled: (data, err, postId) => {
+      queryClient.invalidateQueries({ queryKey: feedPostQueryKey(postId) });
+      queryClient.invalidateQueries({ queryKey: ["feed"] });
+    },
+  });
+}
+
+export function useToggleFeedPostCommentLike() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ postId, commentId }: { postId: string; commentId: string }) =>
+      toggleFeedPostCommentLikeAction(commentId),
+    onMutate: async ({ postId, commentId }) => {
+      await queryClient.cancelQueries({ queryKey: ["feed"] });
+      await queryClient.cancelQueries({ queryKey: feedPostQueryKey(postId) });
+
+      // Invalidate right away for simplicity with deep nested optimistic updates,
+      // or we can just let it refetch if it's too complex.
+      // But invalidation doesn't trigger UI immediately, so we could just return.
+    },
+    onSettled: (data, err, { postId }) => {
+      queryClient.invalidateQueries({ queryKey: feedPostQueryKey(postId) });
+      queryClient.invalidateQueries({ queryKey: ["feed"] });
+    },
+  });
+}
+
+export function useToggleFeedPostDislike() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (postId: string) => toggleFeedPostDislikeAction(postId),
+    onMutate: async (postId) => {
+      await queryClient.cancelQueries({ queryKey: ["feed"] });
+      await queryClient.cancelQueries({ queryKey: feedPostQueryKey(postId) });
+
+      const previousPost = queryClient.getQueryData<FeedPost>(feedPostQueryKey(postId));
+      if (previousPost) {
+        queryClient.setQueryData<FeedPost>(feedPostQueryKey(postId), {
+          ...previousPost,
+          hasDisliked: !previousPost.hasDisliked,
+          dislikeCount: previousPost.hasDisliked ? Math.max(0, previousPost.dislikeCount - 1) : previousPost.dislikeCount + 1,
+        });
+      }
+
+      queryClient.setQueryData<FeedPost[]>(["feed"], (old) => {
+        if (!old) return old;
+        return old.map((post) => {
+          if (post.id === postId) {
+            return {
+              ...post,
+              hasDisliked: !post.hasDisliked,
+              dislikeCount: post.hasDisliked ? Math.max(0, post.dislikeCount - 1) : post.dislikeCount + 1,
+            };
+          }
+          return post;
+        });
+      });
+
+      return { previousPost };
+    },
+    onError: (err, postId, context) => {
+      if (context?.previousPost) {
+        queryClient.setQueryData(feedPostQueryKey(postId), context.previousPost);
+      }
+      queryClient.invalidateQueries({ queryKey: ["feed"] });
+    },
+    onSettled: (data, err, postId) => {
+      queryClient.invalidateQueries({ queryKey: feedPostQueryKey(postId) });
+      queryClient.invalidateQueries({ queryKey: ["feed"] });
+    },
+  });
+}
+
+export function useToggleFeedPostCommentDislike() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ postId, commentId }: { postId: string; commentId: string }) =>
+      toggleFeedPostCommentDislikeAction(commentId),
+    onMutate: async ({ postId, commentId }) => {
+      await queryClient.cancelQueries({ queryKey: ["feed"] });
+      await queryClient.cancelQueries({ queryKey: feedPostQueryKey(postId) });
+    },
+    onSettled: (data, err, { postId }) => {
       queryClient.invalidateQueries({ queryKey: feedPostQueryKey(postId) });
       queryClient.invalidateQueries({ queryKey: ["feed"] });
     },

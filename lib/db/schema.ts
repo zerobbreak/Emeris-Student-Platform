@@ -217,6 +217,7 @@ export const communityPosts = pgTable(
     assistanceArea: varchar("assistance_area", { length: 200 }),
     tipFocus: varchar("tip_focus", { length: 200 }),
     likeCount: integer("like_count").default(0).notNull(),
+    dislikeCount: integer("dislike_count").default(0).notNull(),
     commentCount: integer("comment_count").default(0).notNull(),
     featured: boolean("featured").default(false).notNull(),
     createdAt: timestamp("created_at", { withTimezone: true })
@@ -327,6 +328,120 @@ export const feedPostLikes = pgTable(
   ],
 );
 
+export const feedPostCommentLikes = pgTable(
+  "feed_post_comment_likes",
+  {
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    commentId: text("comment_id")
+      .notNull()
+      .references(() => feedPostComments.id, { onDelete: "cascade" }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => [
+    primaryKey({ columns: [table.userId, table.commentId] }),
+    index("idx_feed_post_comment_likes_comment_id").on(table.commentId),
+  ],
+);
+
+export const communityPostCommentLikes = pgTable(
+  "community_post_comment_likes",
+  {
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    commentId: text("comment_id")
+      .notNull()
+      .references(() => communityPostComments.id, { onDelete: "cascade" }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => [
+    primaryKey({ columns: [table.userId, table.commentId] }),
+    index("idx_community_post_comment_likes_comment_id").on(table.commentId),
+  ],
+);
+
+export const communityPostDislikes = pgTable(
+  "community_post_dislikes",
+  {
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    postId: text("post_id")
+      .notNull()
+      .references(() => communityPosts.id, { onDelete: "cascade" }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => [
+    primaryKey({ columns: [table.userId, table.postId] }),
+    index("idx_community_post_dislikes_post_id").on(table.postId),
+  ],
+);
+
+export const feedPostDislikes = pgTable(
+  "feed_post_dislikes",
+  {
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    postId: text("post_id")
+      .notNull()
+      .references(() => feedPosts.id, { onDelete: "cascade" }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => [
+    primaryKey({ columns: [table.userId, table.postId] }),
+    index("idx_feed_post_dislikes_post_id").on(table.postId),
+  ],
+);
+
+export const feedPostCommentDislikes = pgTable(
+  "feed_post_comment_dislikes",
+  {
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    commentId: text("comment_id")
+      .notNull()
+      .references(() => feedPostComments.id, { onDelete: "cascade" }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => [
+    primaryKey({ columns: [table.userId, table.commentId] }),
+    index("idx_feed_post_comment_dislikes_comment_id").on(table.commentId),
+  ],
+);
+
+export const communityPostCommentDislikes = pgTable(
+  "community_post_comment_dislikes",
+  {
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    commentId: text("comment_id")
+      .notNull()
+      .references(() => communityPostComments.id, { onDelete: "cascade" }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => [
+    primaryKey({ columns: [table.userId, table.commentId] }),
+    index("idx_community_post_comment_dislikes_comment_id").on(table.commentId),
+  ],
+);
+
 export const usersRelations = relations(users, ({ many }) => ({
   sessions: many(sessions),
   userSkills: many(userSkills),
@@ -336,6 +451,12 @@ export const usersRelations = relations(users, ({ many }) => ({
   communityPostComments: many(communityPostComments),
   communityPostLikes: many(communityPostLikes),
   feedPostLikes: many(feedPostLikes),
+  feedPostCommentLikes: many(feedPostCommentLikes),
+  communityPostCommentLikes: many(communityPostCommentLikes),
+  communityPostDislikes: many(communityPostDislikes),
+  feedPostDislikes: many(feedPostDislikes),
+  feedPostCommentDislikes: many(feedPostCommentDislikes),
+  communityPostCommentDislikes: many(communityPostCommentDislikes),
 }));
 
 export const sessionsRelations = relations(sessions, ({ one }) => ({
@@ -375,6 +496,7 @@ export const feedPostsRelations = relations(feedPosts, ({ one, many }) => ({
   }),
   comments: many(feedPostComments),
   likes: many(feedPostLikes),
+  dislikes: many(feedPostDislikes),
 }));
 
 export const feedPostLikesRelations = relations(
@@ -386,6 +508,20 @@ export const feedPostLikesRelations = relations(
     }),
     user: one(users, {
       fields: [feedPostLikes.userId],
+      references: [users.id],
+    }),
+  }),
+);
+
+export const feedPostCommentLikesRelations = relations(
+  feedPostCommentLikes,
+  ({ one }) => ({
+    comment: one(feedPostComments, {
+      fields: [feedPostCommentLikes.commentId],
+      references: [feedPostComments.id],
+    }),
+    user: one(users, {
+      fields: [feedPostCommentLikes.userId],
       references: [users.id],
     }),
   }),
@@ -418,6 +554,8 @@ export const feedPostCommentsRelations = relations(
     threadComments: many(feedPostComments, {
       relationName: "feed_post_thread",
     }),
+    likes: many(feedPostCommentLikes),
+    dislikes: many(feedPostCommentDislikes),
   }),
 );
 
@@ -428,6 +566,7 @@ export const communityPostsRelations = relations(communityPosts, ({ one, many })
   }),
   comments: many(communityPostComments),
   likes: many(communityPostLikes),
+  dislikes: many(communityPostDislikes),
 }));
 
 export const communityPostLikesRelations = relations(
@@ -439,6 +578,20 @@ export const communityPostLikesRelations = relations(
     }),
     user: one(users, {
       fields: [communityPostLikes.userId],
+      references: [users.id],
+    }),
+  }),
+);
+
+export const communityPostCommentLikesRelations = relations(
+  communityPostCommentLikes,
+  ({ one }) => ({
+    comment: one(communityPostComments, {
+      fields: [communityPostCommentLikes.commentId],
+      references: [communityPostComments.id],
+    }),
+    user: one(users, {
+      fields: [communityPostCommentLikes.userId],
       references: [users.id],
     }),
   }),
@@ -470,6 +623,64 @@ export const communityPostCommentsRelations = relations(
     }),
     threadComments: many(communityPostComments, {
       relationName: "community_post_thread",
+    }),
+    likes: many(communityPostCommentLikes),
+    dislikes: many(communityPostCommentDislikes),
+  }),
+);
+
+export const communityPostDislikesRelations = relations(
+  communityPostDislikes,
+  ({ one }) => ({
+    post: one(communityPosts, {
+      fields: [communityPostDislikes.postId],
+      references: [communityPosts.id],
+    }),
+    user: one(users, {
+      fields: [communityPostDislikes.userId],
+      references: [users.id],
+    }),
+  }),
+);
+
+export const feedPostDislikesRelations = relations(
+  feedPostDislikes,
+  ({ one }) => ({
+    post: one(feedPosts, {
+      fields: [feedPostDislikes.postId],
+      references: [feedPosts.id],
+    }),
+    user: one(users, {
+      fields: [feedPostDislikes.userId],
+      references: [users.id],
+    }),
+  }),
+);
+
+export const feedPostCommentDislikesRelations = relations(
+  feedPostCommentDislikes,
+  ({ one }) => ({
+    comment: one(feedPostComments, {
+      fields: [feedPostCommentDislikes.commentId],
+      references: [feedPostComments.id],
+    }),
+    user: one(users, {
+      fields: [feedPostCommentDislikes.userId],
+      references: [users.id],
+    }),
+  }),
+);
+
+export const communityPostCommentDislikesRelations = relations(
+  communityPostCommentDislikes,
+  ({ one }) => ({
+    comment: one(communityPostComments, {
+      fields: [communityPostCommentDislikes.commentId],
+      references: [communityPostComments.id],
+    }),
+    user: one(users, {
+      fields: [communityPostCommentDislikes.userId],
+      references: [users.id],
     }),
   }),
 );

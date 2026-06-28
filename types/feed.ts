@@ -13,6 +13,8 @@ export type FeedComment = {
   likeCount: number;
   dislikeCount: number;
   likedByCreator: boolean;
+  hasLiked?: boolean;
+  hasDisliked?: boolean;
   replyToId: string | null;
   threadId: string | null;
   createdAt: string;
@@ -27,6 +29,7 @@ export type FeedPost = {
   dislikeCount: number;
   commentCount: number;
   hasLiked?: boolean;
+  hasDisliked?: boolean;
   createdAt: string;
   author: FeedAuthor;
   comments: FeedComment[];

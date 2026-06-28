@@ -7,7 +7,7 @@ import { Heart, ThumbsUp, ThumbsDown, Send, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useState } from "react";
-import { useCreateFeedPostComment } from "@/hooks/useFeed";
+import { useCreateFeedPostComment, useToggleFeedPostCommentLike, useToggleFeedPostCommentDislike } from "@/hooks/useFeed";
 import { Badge } from "@/components/ui/badge";
 
 function getInitials(name: string) {
@@ -35,6 +35,16 @@ export function FeedPostCommentItem({
   const [isReplying, setIsReplying] = useState(false);
   const [replyText, setReplyText] = useState("");
   const { mutate: addComment, isPending: isAddingComment } = useCreateFeedPostComment();
+  const { mutate: toggleLike, isPending: isTogglingLike } = useToggleFeedPostCommentLike();
+  const { mutate: toggleDislike, isPending: isTogglingDislike } = useToggleFeedPostCommentDislike();
+
+  const handleLike = () => {
+    toggleLike({ postId, commentId: comment.id });
+  };
+
+  const handleDislike = () => {
+    toggleDislike({ postId, commentId: comment.id });
+  };
 
   const handleReplySubmit = () => {
     if (!replyText.trim()) return;
@@ -90,14 +100,22 @@ export function FeedPostCommentItem({
           </p>
           <div className="flex items-center gap-4 mt-2">
             <div className="flex items-center gap-3 px-1 text-[11px] text-muted-foreground">
-              <span className="inline-flex items-center gap-1">
-                <ThumbsUp className="size-3" />
+              <button 
+                className={`inline-flex items-center gap-1 transition-colors hover:text-primary disabled:opacity-50 ${comment.hasLiked ? 'text-primary' : ''}`}
+                onClick={handleLike}
+                disabled={isTogglingLike}
+              >
+                <ThumbsUp className={`size-3 ${comment.hasLiked ? 'fill-current' : ''}`} />
                 {comment.likeCount}
-              </span>
-              <span className="inline-flex items-center gap-1">
-                <ThumbsDown className="size-3" />
+              </button>
+              <button 
+                className={`inline-flex items-center gap-1 transition-colors hover:text-red-500 disabled:opacity-50 ${comment.hasDisliked ? 'text-red-500' : ''}`}
+                onClick={handleDislike}
+                disabled={isTogglingDislike}
+              >
+                <ThumbsDown className={`size-3 ${comment.hasDisliked ? 'fill-current' : ''}`} />
                 {comment.dislikeCount}
-              </span>
+              </button>
             </div>
             <button
               className="text-[11px] font-medium text-muted-foreground hover:text-primary transition-colors"

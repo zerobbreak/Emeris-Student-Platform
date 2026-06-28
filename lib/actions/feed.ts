@@ -8,6 +8,9 @@ import {
   getFeedPostById,
   uploadFeedImage,
   toggleFeedPostLike,
+  toggleFeedPostDislike,
+  toggleFeedPostCommentLike,
+  toggleFeedPostCommentDislike,
 } from "@/lib/db/queries/feed";
 import { createFeedPostSchema } from "@/lib/validators/feedValidator";
 import type { CreateFeedPostInput } from "@/lib/validators/feedValidator";
@@ -93,6 +96,45 @@ export async function toggleFeedPostLikeAction(postId: string) {
   
   try {
     return await toggleFeedPostLike(session.userId, postId);
+  } catch (error) {
+    if (error instanceof FeedError) {
+      throw new ActionError(error.code, error.message);
+    }
+    throw error;
+  }
+}
+
+export async function toggleFeedPostCommentLikeAction(commentId: string) {
+  const session = await requireSession();
+
+  try {
+    return await toggleFeedPostCommentLike(session.userId, commentId);
+  } catch (error) {
+    if (error instanceof FeedError) {
+      throw new ActionError(error.code, error.message);
+    }
+    throw error;
+  }
+}
+
+export async function toggleFeedPostDislikeAction(postId: string) {
+  const session = await requireSession();
+  
+  try {
+    return await toggleFeedPostDislike(session.userId, postId);
+  } catch (error) {
+    if (error instanceof FeedError) {
+      throw new ActionError(error.code, error.message);
+    }
+    throw error;
+  }
+}
+
+export async function toggleFeedPostCommentDislikeAction(commentId: string) {
+  const session = await requireSession();
+
+  try {
+    return await toggleFeedPostCommentDislike(session.userId, commentId);
   } catch (error) {
     if (error instanceof FeedError) {
       throw new ActionError(error.code, error.message);

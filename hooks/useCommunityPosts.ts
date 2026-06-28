@@ -10,6 +10,9 @@ import {
   fetchCommunityPostsAction,
   uploadCommunityPostImageAction,
   toggleCommunityPostLikeAction,
+  toggleCommunityPostDislikeAction,
+  toggleCommunityPostCommentLikeAction,
+  toggleCommunityPostCommentDislikeAction,
 } from "@/lib/actions/community";
 import type { CreateCommunityPostInput } from "@/lib/validators/communityPostValidator";
 import type { CommunityPost, CommunityPostComment, CommunityPostKind } from "@/types/communityPost";
@@ -161,6 +164,98 @@ export function useToggleCommunityPostLike() {
       // Always refetch after error or success to ensure we have the correct server state
       queryClient.invalidateQueries({ queryKey: communityPostQueryKey(postId) });
       queryClient.invalidateQueries({ queryKey: communityPostsQueryKey("all") });
+    },
+  });
+}
+
+export function useToggleCommunityPostCommentLike() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ postId, commentId }: { postId: string; commentId: string }) =>
+      toggleCommunityPostCommentLikeAction(commentId),
+    onMutate: async ({ postId, commentId }) => {
+      await queryClient.cancelQueries({ queryKey: ["community-posts"] });
+      await queryClient.cancelQueries({ queryKey: communityPostQueryKey(postId) });
+      await queryClient.cancelQueries({ queryKey: communityPostCommentsQueryKey(postId) });
+    },
+    onSettled: (data, err, { postId }) => {
+      queryClient.invalidateQueries({ queryKey: communityPostQueryKey(postId) });
+      queryClient.invalidateQueries({ queryKey: ["community-posts"] });
+      queryClient.invalidateQueries({ queryKey: communityPostCommentsQueryKey(postId) });
+    },
+  });
+}
+
+export function useToggleCommunityPostDislike() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (postId: string) => toggleCommunityPostDislikeAction(postId),
+    onMutate: async (postId) => {
+      await queryClient.cancelQueries({ queryKey: communityPostsQueryKey("all") });
+      await queryClient.cancelQueries({ queryKey: communityPostQueryKey(postId) });
+
+      const previousPost = queryClient.getQueryData<CommunityPost>(communityPostQueryKey(postId));
+      if (previousPost) {
+        queryClient.setQueryData<CommunityPost>(communityPostQueryKey(postId), {
+          ...previousPost,
+          hasDisliked: !previousPost.hasDisliked,
+          dislikeCount: previousPost.hasDisliked ? Math.max(0, (previousPost.dislikeCount ?? 0) - 1) : (previousPost.dislikeCount ?? 0) + 1,
+        });
+      }
+
+      const updateList = (kind: CommunityPostKind | "all") => {
+        queryClient.setQueryData<CommunityPost[]>(communityPostsQueryKey(kind), (old) => {
+          if (!old) return old;
+          return old.map((post) => {
+            if (post.id === postId) {
+              return {
+                ...post,
+                hasDisliked: !post.hasDisliked,
+                dislikeCount: post.hasDisliked ? Math.max(0, (post.dislikeCount ?? 0) - 1) : (post.dislikeCount ?? 0) + 1,
+              };
+            }
+            return post;
+          });
+        });
+      };
+
+      updateList("all");
+      updateList("assistance");
+      updateList("project");
+      updateList("tip");
+
+      return { previousPost };
+    },
+    onError: (err, postId, context) => {
+      if (context?.previousPost) {
+        queryClient.setQueryData(communityPostQueryKey(postId), context.previousPost);
+      }
+      queryClient.invalidateQueries({ queryKey: communityPostsQueryKey("all") });
+    },
+    onSettled: (data, err, postId) => {
+      queryClient.invalidateQueries({ queryKey: communityPostQueryKey(postId) });
+      queryClient.invalidateQueries({ queryKey: communityPostsQueryKey("all") });
+    },
+  });
+}
+
+export function useToggleCommunityPostCommentDislike() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ postId, commentId }: { postId: string; commentId: string }) =>
+      toggleCommunityPostCommentDislikeAction(commentId),
+    onMutate: async ({ postId, commentId }) => {
+      await queryClient.cancelQueries({ queryKey: ["community-posts"] });
+      await queryClient.cancelQueries({ queryKey: communityPostQueryKey(postId) });
+      await queryClient.cancelQueries({ queryKey: communityPostCommentsQueryKey(postId) });
+    },
+    onSettled: (data, err, { postId }) => {
+      queryClient.invalidateQueries({ queryKey: communityPostQueryKey(postId) });
+      queryClient.invalidateQueries({ queryKey: ["community-posts"] });
+      queryClient.invalidateQueries({ queryKey: communityPostCommentsQueryKey(postId) });
     },
   });
 }
