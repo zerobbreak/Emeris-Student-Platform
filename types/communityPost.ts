@@ -10,6 +10,17 @@ export type CommunityPostAuthor = {
   year: number | null;
 };
 
+export type CommunityPostComment = {
+  id: string;
+  postId: string;
+  text: string;
+  likeCount: number;
+  dislikeCount: number;
+  likedByCreator: boolean;
+  createdAt: string;
+  author: CommunityPostAuthor;
+};
+
 export type CommunityPost = {
   id: string;
   kind: CommunityPostKind;
@@ -28,4 +39,5 @@ export type CommunityPost = {
   featured: boolean;
   createdAt: string;
   author: CommunityPostAuthor;
+  comments?: CommunityPostComment[];
 };

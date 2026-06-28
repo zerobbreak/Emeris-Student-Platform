@@ -7,7 +7,6 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { InferSelectModel } from "drizzle-orm";
 import { BrainCircuit, BookOpen, GraduationCap, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";

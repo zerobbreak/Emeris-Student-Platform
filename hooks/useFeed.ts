@@ -3,17 +3,31 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import {
+  addFeedPostCommentAction,
   createFeedPostAction,
   fetchFeedAction,
+  fetchFeedPostAction,
   uploadFeedImageAction,
 } from "@/lib/actions/feed";
 import type { CreateFeedPostInput } from "@/lib/validators/feedValidator";
-import type { FeedPost } from "@/types/feed";
+import type { FeedComment, FeedPost } from "@/types/feed";
 
 export function useFeed() {
   return useQuery({
     queryKey: ["feed"],
     queryFn: () => fetchFeedAction(),
+    staleTime: 1000 * 60 * 2,
+  });
+}
+
+export function feedPostQueryKey(id: string) {
+  return ["feed-post", id] as const;
+}
+
+export function useFeedPost(id: string) {
+  return useQuery({
+    queryKey: feedPostQueryKey(id),
+    queryFn: () => fetchFeedPostAction(id),
     staleTime: 1000 * 60 * 2,
   });
 }
@@ -27,6 +41,21 @@ export function useCreateFeedPost() {
       queryClient.setQueryData<FeedPost[]>(["feed"], (current) =>
         current ? [post, ...current] : [post],
       );
+    },
+  });
+}
+
+export function useCreateFeedPostComment() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ postId, text }: { postId: string; text: string }) =>
+      addFeedPostCommentAction(postId, text),
+    onSuccess: (comment, { postId }) => {
+      // Invalidate the specific post so it fetches the new comment and updated commentCount
+      queryClient.invalidateQueries({ queryKey: feedPostQueryKey(postId) });
+      // Also invalidate the main feed
+      queryClient.invalidateQueries({ queryKey: ["feed"] });
     },
   });
 }

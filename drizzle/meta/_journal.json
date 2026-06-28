@@ -43,6 +43,13 @@
       "when": 1782569944065,
       "tag": "0005_smart_shadow_king",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1782581291029,
+      "tag": "0006_gifted_slipstream",
+      "breakpoints": true
     }
   ]
 }

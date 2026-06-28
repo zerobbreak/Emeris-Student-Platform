@@ -102,9 +102,11 @@ function PostCard({ post }: { post: CommunityPost }) {
                 </Badge>
               )}
             </div>
-            <h3 className="text-lg font-semibold leading-snug text-foreground hover:text-primary">
-              {post.title}
-            </h3>
+            <Link href={`/community/${post.id}`}>
+              <h3 className="text-lg font-semibold leading-snug text-foreground hover:text-primary">
+                {post.title}
+              </h3>
+            </Link>
             <p className="text-sm text-muted-foreground">{post.excerpt}</p>
           </div>
         </div>
@@ -132,15 +134,16 @@ function PostCard({ post }: { post: CommunityPost }) {
               <Heart className="size-4" />
               {post.reactions}
             </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="text-muted-foreground hover:text-primary"
-              disabled
-            >
-              <MessageCircle className="size-4" />
-              {post.comments}
-            </Button>
+            <Link href={`/community/${post.id}`}>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-muted-foreground hover:text-primary"
+              >
+                <MessageCircle className="size-4" />
+                {post.comments}
+              </Button>
+            </Link>
             <Button
               variant="ghost"
               size="sm"

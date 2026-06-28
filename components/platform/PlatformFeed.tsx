@@ -3,8 +3,6 @@
 import { useState } from "react";
 import Image from "next/image";
 import {
-  ChevronDown,
-  ChevronUp,
   Heart,
   MessageCircle,
   PenLine,
@@ -24,8 +22,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { useFeed } from "@/hooks/useFeed";
 import { getCourseLabel } from "@/lib/constants/itCourses";
 import { formatRelativeTime } from "@/lib/constants/communityFeed";
-import type { FeedComment, FeedPost } from "@/types/feed";
+import type { FeedPost } from "@/types/feed";
 import { cn } from "@/lib/utils";
+import Link from "next/link";
 
 type PlatformFeedProps = {
   user: { id: string; name: string };
@@ -49,56 +48,9 @@ function authorSubtitle(author: FeedPost["author"]) {
   return parts.join(" · ");
 }
 
-function CommentItem({ comment }: { comment: FeedComment }) {
-  return (
-    <div className="flex gap-2.5">
-      <Avatar className="size-7 shrink-0">
-        <AvatarImage
-          src={comment.author.profileImage ?? undefined}
-          alt={comment.author.name}
-        />
-        <AvatarFallback className="bg-primary/10 text-[10px] text-primary">
-          {getInitials(comment.author.name)}
-        </AvatarFallback>
-      </Avatar>
-      <div className="min-w-0 flex-1 space-y-1.5">
-        <div className="rounded-lg bg-muted/50 px-3 py-2">
-          <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
-            <span className="text-xs font-medium">{comment.author.name}</span>
-            <span className="text-[10px] text-muted-foreground">
-              {formatRelativeTime(comment.createdAt)}
-            </span>
-            {comment.likedByCreator && (
-              <Badge
-                variant="secondary"
-                className="h-4 border-0 bg-secondary/20 px-1.5 text-[9px] text-secondary-foreground"
-              >
-                <Heart className="size-2.5 fill-current" />
-                Liked by creator
-              </Badge>
-            )}
-          </div>
-          <p className="mt-1 text-sm leading-relaxed text-foreground">
-            {comment.text}
-          </p>
-        </div>
-        <div className="flex items-center gap-3 px-1 text-[11px] text-muted-foreground">
-          <span className="inline-flex items-center gap-1">
-            <ThumbsUp className="size-3" />
-            {comment.likeCount}
-          </span>
-          <span className="inline-flex items-center gap-1">
-            <ThumbsDown className="size-3" />
-            {comment.dislikeCount}
-          </span>
-        </div>
-      </div>
-    </div>
-  );
-}
+
 
 function FeedPostCard({ post }: { post: FeedPost }) {
-  const [commentsOpen, setCommentsOpen] = useState(false);
   const subtitle = authorSubtitle(post.author);
 
   return (
@@ -120,9 +72,9 @@ function FeedPostCard({ post }: { post: FeedPost }) {
               {subtitle && (
                 <span className="text-xs text-muted-foreground">{subtitle}</span>
               )}
-              <span className="text-xs text-muted-foreground">
+              <Link href={`/feed/${post.id}`} className="text-xs text-muted-foreground hover:underline hover:text-primary">
                 · {formatRelativeTime(post.createdAt)}
-              </span>
+              </Link>
             </div>
             <p className="whitespace-pre-wrap text-sm leading-relaxed text-foreground">
               {post.text}
@@ -162,46 +114,20 @@ function FeedPostCard({ post }: { post: FeedPost }) {
               <ThumbsDown className="size-4" />
               {post.dislikeCount}
             </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              className={cn(
-                "h-8 gap-1.5 text-muted-foreground hover:text-primary",
-                commentsOpen && "text-primary",
-              )}
-              onClick={() => setCommentsOpen((open) => !open)}
-            >
-              <MessageCircle className="size-4" />
-              {post.commentCount}
-              {commentsOpen ? (
-                <ChevronUp className="size-3.5" />
-              ) : (
-                <ChevronDown className="size-3.5" />
-              )}
-            </Button>
+            <Link href={`/feed/${post.id}`}>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 gap-1.5 text-muted-foreground hover:text-primary"
+              >
+                <MessageCircle className="size-4" />
+                {post.commentCount}
+              </Button>
+            </Link>
           </div>
         </div>
 
-        {commentsOpen && post.comments.length > 0 && (
-          <>
-            <Separator />
-            <div className="space-y-3">
-              <p className="text-xs font-medium text-muted-foreground">
-                Comments on this post
-              </p>
-              {post.comments.map((comment) => (
-                <CommentItem key={comment.id} comment={comment} />
-              ))}
-            </div>
-          </>
-        )}
 
-        {commentsOpen && post.comments.length === 0 && (
-          <>
-            <Separator />
-            <p className="text-xs text-muted-foreground">No comments yet.</p>
-          </>
-        )}
       </CardContent>
     </Card>
   );

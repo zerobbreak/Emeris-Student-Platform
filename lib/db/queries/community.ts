@@ -1,13 +1,13 @@
 import { desc, eq } from "drizzle-orm";
 
 import { db } from "@/lib/db/client";
-import { communityPosts } from "@/lib/db/schema";
+import { communityPostComments, communityPosts } from "@/lib/db/schema";
 import {
   StorageError,
   uploadPlatformImage,
 } from "@/lib/supabase/storage";
 import type { CreateCommunityPostInput } from "@/lib/validators/communityPostValidator";
-import type { CommunityPost, CommunityPostKind } from "@/types/communityPost";
+import type { CommunityPost, CommunityPostComment, CommunityPostKind } from "@/types/communityPost";
 
 
 export class CommunityPostError extends Error {
@@ -97,6 +97,61 @@ export async function getCommunityPosts(
   return rows.map(mapCommunityPost);
 }
 
+export async function getCommunityPostById(
+  id: string,
+): Promise<CommunityPost | null> {
+  const row = await db.query.communityPosts.findFirst({
+    where: eq(communityPosts.id, id),
+    with: { author: true },
+  });
+
+  if (!row) {
+    return null;
+  }
+
+  return mapCommunityPost(row);
+}
+
+function mapCommunityPostComment(row: {
+  id: string;
+  postId: string;
+  text: string;
+  likeCount: number;
+  dislikeCount: number;
+  likedByCreator: boolean;
+  createdAt: Date;
+  author: {
+    id: string;
+    name: string;
+    profileImage: string | null;
+    course: string | null;
+    year: number | null;
+  };
+}): CommunityPostComment {
+  return {
+    id: row.id,
+    postId: row.postId,
+    text: row.text,
+    likeCount: row.likeCount,
+    dislikeCount: row.dislikeCount,
+    likedByCreator: row.likedByCreator,
+    createdAt: row.createdAt.toISOString(),
+    author: mapAuthor(row.author),
+  };
+}
+
+export async function getCommunityPostComments(
+  postId: string,
+): Promise<CommunityPostComment[]> {
+  const rows = await db.query.communityPostComments.findMany({
+    where: eq(communityPostComments.postId, postId),
+    orderBy: [desc(communityPostComments.createdAt)],
+    with: { author: true },
+  });
+
+  return rows.map(mapCommunityPostComment);
+}
+
 export async function createCommunityPost(
   authorId: string,
   input: CreateCommunityPostInput,
@@ -136,6 +191,41 @@ export async function createCommunityPost(
   }
 
   return mapCommunityPost(row);
+}
+
+export async function createCommunityPostComment(
+  authorId: string,
+  postId: string,
+  text: string,
+): Promise<CommunityPostComment> {
+  const [inserted] = await db
+    .insert(communityPostComments)
+    .values({
+      authorId,
+      postId,
+      text: text.trim(),
+    })
+    .returning({ id: communityPostComments.id });
+
+  // Increment commentCount on the post
+  const post = await getCommunityPostById(postId);
+  if (post) {
+    await db
+      .update(communityPosts)
+      .set({ commentCount: post.commentCount + 1 })
+      .where(eq(communityPosts.id, postId));
+  }
+
+  const row = await db.query.communityPostComments.findFirst({
+    where: eq(communityPostComments.id, inserted.id),
+    with: { author: true },
+  });
+
+  if (!row) {
+    throw new CommunityPostError("INTERNAL_ERROR", "Failed to load created comment");
+  }
+
+  return mapCommunityPostComment(row);
 }
 
 export async function uploadCommunityPostImage(userId: string, file: File) {

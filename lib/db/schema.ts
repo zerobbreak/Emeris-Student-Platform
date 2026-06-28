@@ -258,12 +258,39 @@ export const feedPostComments = pgTable(
   ],
 );
 
+export const communityPostComments = pgTable(
+  "community_post_comments",
+  {
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => createId()),
+    postId: text("post_id")
+      .notNull()
+      .references(() => communityPosts.id, { onDelete: "cascade" }),
+    authorId: text("author_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    text: text("text").notNull(),
+    likeCount: integer("like_count").default(0).notNull(),
+    dislikeCount: integer("dislike_count").default(0).notNull(),
+    likedByCreator: boolean("liked_by_creator").default(false).notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => [
+    index("idx_community_post_comments_post_id").on(table.postId),
+    index("idx_community_post_comments_author_id").on(table.authorId),
+  ],
+);
+
 export const usersRelations = relations(users, ({ many }) => ({
   sessions: many(sessions),
   userSkills: many(userSkills),
   feedPosts: many(feedPosts),
   feedPostComments: many(feedPostComments),
   communityPosts: many(communityPosts),
+  communityPostComments: many(communityPostComments),
 }));
 
 export const sessionsRelations = relations(sessions, ({ one }) => ({
@@ -318,9 +345,24 @@ export const feedPostCommentsRelations = relations(
   }),
 );
 
-export const communityPostsRelations = relations(communityPosts, ({ one }) => ({
+export const communityPostsRelations = relations(communityPosts, ({ one, many }) => ({
   author: one(users, {
     fields: [communityPosts.authorId],
     references: [users.id],
   }),
+  comments: many(communityPostComments),
 }));
+
+export const communityPostCommentsRelations = relations(
+  communityPostComments,
+  ({ one }) => ({
+    post: one(communityPosts, {
+      fields: [communityPostComments.postId],
+      references: [communityPosts.id],
+    }),
+    author: one(users, {
+      fields: [communityPostComments.authorId],
+      references: [users.id],
+    }),
+  }),
+);

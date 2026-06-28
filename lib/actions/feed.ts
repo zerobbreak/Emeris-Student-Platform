@@ -1,14 +1,15 @@
 "use server";
 
-import {
   FeedError,
   createFeedPost,
+  createFeedPostComment,
+  getFeedPostById,
   getFeedPosts,
   uploadFeedImage,
 } from "@/lib/db/queries/feed";
 import { createFeedPostSchema } from "@/lib/validators/feedValidator";
 import type { CreateFeedPostInput } from "@/lib/validators/feedValidator";
-import type { FeedPost } from "@/types/feed";
+import type { FeedComment, FeedPost } from "@/types/feed";
 
 import { requireSession } from "@/lib/auth/session";
 import { ActionError } from "@/lib/errors";
@@ -48,6 +49,33 @@ export async function uploadFeedImageAction(formData: FormData) {
 
   try {
     return await uploadFeedImage(session.userId, file);
+  } catch (error) {
+    if (error instanceof FeedError) {
+      throw new ActionError(error.code, error.message);
+    }
+    throw error;
+  }
+}
+
+export async function fetchFeedPostAction(
+  id: string,
+): Promise<FeedPost | null> {
+  await requireSession();
+  return getFeedPostById(id);
+}
+
+export async function addFeedPostCommentAction(
+  postId: string,
+  text: string,
+): Promise<FeedComment> {
+  const session = await requireSession();
+  
+  if (!text || text.trim() === "") {
+    throw new ActionError("VALIDATION_ERROR", "Comment text is required");
+  }
+
+  try {
+    return await createFeedPostComment(session.userId, postId, text);
   } catch (error) {
     if (error instanceof FeedError) {
       throw new ActionError(error.code, error.message);

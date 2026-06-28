@@ -1,7 +1,7 @@
 import { desc, eq } from "drizzle-orm";
 
 import { db } from "@/lib/db/client";
-import { feedPosts } from "@/lib/db/schema";
+import { feedPostComments, feedPosts } from "@/lib/db/schema";
 import {
   StorageError,
   uploadPlatformImage,
@@ -138,6 +138,69 @@ export async function createFeedPost(
   }
 
   return mapFeedPost(row);
+}
+
+export async function getFeedPostById(id: string): Promise<FeedPost | null> {
+  const row = await db.query.feedPosts.findFirst({
+    where: eq(feedPosts.id, id),
+    with: {
+      author: true,
+      comments: {
+        with: { author: true },
+        orderBy: (comments, { asc }) => [asc(comments.createdAt)],
+      },
+    },
+  });
+
+  if (!row) {
+    return null;
+  }
+
+  return mapFeedPost(row);
+}
+
+export async function createFeedPostComment(
+  authorId: string,
+  postId: string,
+  text: string,
+): Promise<FeedComment> {
+  const [inserted] = await db
+    .insert(feedPostComments)
+    .values({
+      authorId,
+      postId,
+      text: text.trim(),
+    })
+    .returning({ id: feedPostComments.id });
+
+  // Increment commentCount on the post
+  const post = await getFeedPostById(postId);
+  if (post) {
+    await db
+      .update(feedPosts)
+      .set({ commentCount: post.commentCount + 1 })
+      .where(eq(feedPosts.id, postId));
+  }
+
+  const row = await db.query.feedPostComments.findFirst({
+    where: eq(feedPostComments.id, inserted.id),
+    with: { author: true },
+  });
+
+  if (!row) {
+    throw new FeedError("INTERNAL_ERROR", "Failed to load created comment");
+  }
+
+  return {
+    id: row.id,
+    postId: row.postId,
+    text: row.text,
+    likeCount: row.likeCount,
+    dislikeCount: row.dislikeCount,
+    likedByCreator: row.likedByCreator,
+    createdAt: row.createdAt.toISOString(),
+    author: mapAuthor(row.author),
+  };
 }
 
 export async function uploadFeedImage(userId: string, file: File) {

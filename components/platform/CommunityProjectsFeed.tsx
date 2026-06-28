@@ -82,7 +82,7 @@ function formatAuthorLabel(author: CommunityPost["author"]) {
   return parts.join(" · ");
 }
 
-function PostCard({ post }: { post: CommunityPost }) {
+export function PostCard({ post }: { post: CommunityPost }) {
   const meta = kindMeta[post.kind];
   const KindIcon = meta.icon;
   const authorLabel = formatAuthorLabel(post.author);
@@ -125,9 +125,11 @@ function PostCard({ post }: { post: CommunityPost }) {
               <KindIcon className="size-3" />
               {meta.label}
             </Badge>
-            <h3 className="text-lg font-semibold leading-snug text-foreground hover:text-primary">
-              {post.title}
-            </h3>
+            <Link href={`/community/${post.id}`}>
+              <h3 className="text-lg font-semibold leading-snug text-foreground hover:text-primary">
+                {post.title}
+              </h3>
+            </Link>
             <p className="text-sm text-muted-foreground">{post.excerpt}</p>
           </div>
         </div>
@@ -225,15 +227,16 @@ function PostCard({ post }: { post: CommunityPost }) {
               <Heart className="size-4" />
               {post.likeCount}
             </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="text-muted-foreground hover:text-primary"
-              disabled
-            >
-              <MessageCircle className="size-4" />
-              {post.commentCount}
-            </Button>
+            <Link href={`/community/${post.id}`}>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-muted-foreground hover:text-primary"
+              >
+                <MessageCircle className="size-4" />
+                {post.commentCount}
+              </Button>
+            </Link>
             <Button
               variant="ghost"
               size="sm"
