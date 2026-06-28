@@ -19,7 +19,7 @@ import {
 } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
-import { useFeed } from "@/hooks/useFeed";
+import { useFeed, useToggleFeedPostLike } from "@/hooks/useFeed";
 import { getCourseLabel } from "@/lib/constants/itCourses";
 import { formatRelativeTime } from "@/lib/constants/communityFeed";
 import type { FeedPost } from "@/types/feed";
@@ -50,6 +50,7 @@ function authorSubtitle(author: FeedPost["author"]) {
 
 function FeedPostCard({ post }: { post: FeedPost }) {
   const subtitle = authorSubtitle(post.author);
+  const { mutate: toggleLike, isPending: isLiking } = useToggleFeedPostLike();
 
   return (
     <Card className="border-primary/10 transition hover:border-primary/20">
@@ -101,10 +102,17 @@ function FeedPostCard({ post }: { post: FeedPost }) {
             <Button
               variant="ghost"
               size="sm"
-              className="h-8 gap-1.5 text-muted-foreground"
-              disabled
+              className={cn(
+                "h-8 gap-1.5 text-muted-foreground hover:text-primary",
+                post.hasLiked && "text-red-500 hover:text-red-600",
+                isLiking && "pointer-events-none"
+              )}
+              onClick={(e) => {
+                e.preventDefault();
+                toggleLike(post.id);
+              }}
             >
-              <ThumbsUp className="size-4" />
+              <Heart className={cn("size-4", post.hasLiked && "fill-current")} />
               {post.likeCount}
             </Button>
             <Button

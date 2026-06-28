@@ -26,6 +26,7 @@ export type FeedPost = {
   likeCount: number;
   dislikeCount: number;
   commentCount: number;
+  hasLiked?: boolean;
   createdAt: string;
   author: FeedAuthor;
   comments: FeedComment[];

@@ -229,10 +229,13 @@ export function PostCard({ post }: { post: CommunityPost }) {
               size="sm"
               className={cn(
                 "text-muted-foreground hover:text-primary",
-                post.hasLiked && "text-red-500 hover:text-red-600"
+                post.hasLiked && "text-red-500 hover:text-red-600",
+                isLiking && "pointer-events-none"
               )}
-              onClick={handleLike}
-              disabled={isLiking}
+              onClick={(e) => {
+                e.preventDefault();
+                handleLike();
+              }}
             >
               <Heart className={cn("size-4", post.hasLiked && "fill-current")} />
               {post.likeCount}

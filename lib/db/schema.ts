@@ -308,6 +308,25 @@ export const communityPostLikes = pgTable(
   ],
 );
 
+export const feedPostLikes = pgTable(
+  "feed_post_likes",
+  {
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    postId: text("post_id")
+      .notNull()
+      .references(() => feedPosts.id, { onDelete: "cascade" }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => [
+    primaryKey({ columns: [table.userId, table.postId] }),
+    index("idx_feed_post_likes_post_id").on(table.postId),
+  ],
+);
+
 export const usersRelations = relations(users, ({ many }) => ({
   sessions: many(sessions),
   userSkills: many(userSkills),
@@ -316,6 +335,7 @@ export const usersRelations = relations(users, ({ many }) => ({
   communityPosts: many(communityPosts),
   communityPostComments: many(communityPostComments),
   communityPostLikes: many(communityPostLikes),
+  feedPostLikes: many(feedPostLikes),
 }));
 
 export const sessionsRelations = relations(sessions, ({ one }) => ({
@@ -354,7 +374,22 @@ export const feedPostsRelations = relations(feedPosts, ({ one, many }) => ({
     references: [users.id],
   }),
   comments: many(feedPostComments),
+  likes: many(feedPostLikes),
 }));
+
+export const feedPostLikesRelations = relations(
+  feedPostLikes,
+  ({ one }) => ({
+    post: one(feedPosts, {
+      fields: [feedPostLikes.postId],
+      references: [feedPosts.id],
+    }),
+    user: one(users, {
+      fields: [feedPostLikes.userId],
+      references: [users.id],
+    }),
+  }),
+);
 
 export const feedPostCommentsRelations = relations(
   feedPostComments,

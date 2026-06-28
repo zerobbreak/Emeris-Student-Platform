@@ -1,7 +1,7 @@
-import { desc, eq } from "drizzle-orm";
+import { and, desc, eq, inArray } from "drizzle-orm";
 
 import { db } from "@/lib/db/client";
-import { feedPostComments, feedPosts } from "@/lib/db/schema";
+import { feedPostComments, feedPostLikes, feedPosts } from "@/lib/db/schema";
 import {
   StorageError,
   uploadPlatformImage,
@@ -69,6 +69,7 @@ function mapFeedPost(row: {
       year: number | null;
     };
   }>;
+  hasLiked?: boolean;
 }): FeedPost {
   return {
     id: row.id,
@@ -78,6 +79,7 @@ function mapFeedPost(row: {
     dislikeCount: row.dislikeCount,
     commentCount: row.commentCount,
     createdAt: row.createdAt.toISOString(),
+    hasLiked: row.hasLiked ?? false,
     author: mapAuthor(row.author),
     comments: row.comments.map(
       (comment): FeedComment => ({
@@ -96,7 +98,7 @@ function mapFeedPost(row: {
   };
 }
 
-export async function getFeedPosts(): Promise<FeedPost[]> {
+export async function getFeedPosts(currentUserId?: string): Promise<FeedPost[]> {
   const rows = await db.query.feedPosts.findMany({
     orderBy: (posts, { desc }) => [desc(posts.createdAt)],
     with: {
@@ -108,7 +110,19 @@ export async function getFeedPosts(): Promise<FeedPost[]> {
     },
   });
 
-  return rows.map(mapFeedPost);
+  if (!rows.length) return [];
+
+  let userLikes = new Set<string>();
+  if (currentUserId) {
+    const postIds = rows.map((r) => r.id);
+    const likes = await db.query.feedPostLikes.findMany({
+      where: (likes, { eq, and, inArray }) =>
+        and(eq(likes.userId, currentUserId), inArray(likes.postId, postIds)),
+    });
+    userLikes = new Set(likes.map((l) => l.postId));
+  }
+
+  return rows.map((row) => mapFeedPost({ ...row, hasLiked: userLikes.has(row.id) }));
 }
 
 export async function createFeedPost(
@@ -144,7 +158,7 @@ export async function createFeedPost(
   return mapFeedPost(row);
 }
 
-export async function getFeedPostById(id: string): Promise<FeedPost | null> {
+export async function getFeedPostById(id: string, currentUserId?: string): Promise<FeedPost | null> {
   const row = await db.query.feedPosts.findFirst({
     where: (posts, { eq }) => eq(posts.id, id),
     with: {
@@ -160,7 +174,67 @@ export async function getFeedPostById(id: string): Promise<FeedPost | null> {
     return null;
   }
 
-  return mapFeedPost(row);
+  let hasLiked = false;
+  if (currentUserId) {
+    const like = await db.query.feedPostLikes.findFirst({
+      where: (likes, { eq, and }) =>
+        and(eq(likes.userId, currentUserId), eq(likes.postId, id)),
+    });
+    hasLiked = !!like;
+  }
+
+  return mapFeedPost({ ...row, hasLiked });
+}
+
+export async function toggleFeedPostLike(
+  userId: string,
+  postId: string,
+): Promise<{ hasLiked: boolean; likeCount: number }> {
+  // Check if post exists
+  const post = await db.query.feedPosts.findFirst({
+    where: (posts, { eq }) => eq(posts.id, postId),
+  });
+
+  if (!post) {
+    throw new FeedError("NOT_FOUND", "Post not found");
+  }
+
+  // Check if like exists
+  const existingLike = await db.query.feedPostLikes.findFirst({
+    where: (likes, { eq, and }) =>
+      and(eq(likes.userId, userId), eq(likes.postId, postId)),
+  });
+
+  if (existingLike) {
+    // Unlike
+    await db
+      .delete(feedPostLikes)
+      .where(
+        and(eq(feedPostLikes.userId, userId), eq(feedPostLikes.postId, postId)),
+      );
+
+    const newLikeCount = Math.max(0, post.likeCount - 1);
+    await db
+      .update(feedPosts)
+      .set({ likeCount: newLikeCount })
+      .where(eq(feedPosts.id, postId));
+
+    return { hasLiked: false, likeCount: newLikeCount };
+  } else {
+    // Like
+    await db.insert(feedPostLikes).values({
+      userId,
+      postId,
+    });
+
+    const newLikeCount = post.likeCount + 1;
+    await db
+      .update(feedPosts)
+      .set({ likeCount: newLikeCount })
+      .where(eq(feedPosts.id, postId));
+
+    return { hasLiked: true, likeCount: newLikeCount };
+  }
 }
 
 export async function createFeedPostComment(

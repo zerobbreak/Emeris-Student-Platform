@@ -71,6 +71,13 @@
       "when": 1782670694694,
       "tag": "0009_lonely_shotgun",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1782673690191,
+      "tag": "0010_regular_tigra",
+      "breakpoints": true
     }
   ]
 }

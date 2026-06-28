@@ -4,9 +4,10 @@ import {
   FeedError,
   createFeedPost,
   createFeedPostComment,
-  getFeedPostById,
   getFeedPosts,
+  getFeedPostById,
   uploadFeedImage,
+  toggleFeedPostLike,
 } from "@/lib/db/queries/feed";
 import { createFeedPostSchema } from "@/lib/validators/feedValidator";
 import type { CreateFeedPostInput } from "@/lib/validators/feedValidator";
@@ -16,8 +17,8 @@ import { requireSession } from "@/lib/auth/session";
 import { ActionError } from "@/lib/errors";
 
 export async function fetchFeedAction(): Promise<FeedPost[]> {
-  await requireSession();
-  return getFeedPosts();
+  const session = await requireSession();
+  return getFeedPosts(session.userId);
 }
 
 export async function createFeedPostAction(
@@ -61,8 +62,8 @@ export async function uploadFeedImageAction(formData: FormData) {
 export async function fetchFeedPostAction(
   id: string,
 ): Promise<FeedPost | null> {
-  await requireSession();
-  return getFeedPostById(id);
+  const session = await requireSession();
+  return getFeedPostById(id, session.userId);
 }
 
 export async function addFeedPostCommentAction(
@@ -79,6 +80,19 @@ export async function addFeedPostCommentAction(
 
   try {
     return await createFeedPostComment(session.userId, postId, text, replyToId, threadId);
+  } catch (error) {
+    if (error instanceof FeedError) {
+      throw new ActionError(error.code, error.message);
+    }
+    throw error;
+  }
+}
+
+export async function toggleFeedPostLikeAction(postId: string) {
+  const session = await requireSession();
+  
+  try {
+    return await toggleFeedPostLike(session.userId, postId);
   } catch (error) {
     if (error instanceof FeedError) {
       throw new ActionError(error.code, error.message);

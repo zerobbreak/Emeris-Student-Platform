@@ -11,9 +11,10 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
+import { cn } from "@/lib/utils";
 import { FeedPostCommentItem } from "@/components/platform/FeedPostComment";
 
-import { useFeedPost, useCreateFeedPostComment } from "@/hooks/useFeed";
+import { useFeedPost, useCreateFeedPostComment, useToggleFeedPostLike } from "@/hooks/useFeed";
 import { useCurrentUser } from "@/hooks/useAuth";
 import { formatRelativeTime } from "@/lib/constants/communityFeed";
 import { getCourseLabel } from "@/lib/constants/itCourses";
@@ -42,6 +43,7 @@ export default function FeedPostDetailsPage(props: { params: Promise<{ id: strin
   const { data: user } = useCurrentUser();
   const { data: post, isLoading: isPostLoading } = useFeedPost(postId);
   const { mutate: addComment, isPending: isAddingComment } = useCreateFeedPostComment();
+  const { mutate: toggleLike, isPending: isLiking } = useToggleFeedPostLike();
 
   const [commentText, setCommentText] = useState("");
   const [replyingTo, setReplyingTo] = useState<string | null>(null);
@@ -152,10 +154,17 @@ export default function FeedPostDetailsPage(props: { params: Promise<{ id: strin
               <Button
                 variant="ghost"
                 size="sm"
-                className="h-8 gap-1.5 text-muted-foreground"
-                disabled
+                className={cn(
+                  "h-8 gap-1.5 text-muted-foreground hover:text-primary",
+                  post.hasLiked && "text-red-500 hover:text-red-600",
+                  isLiking && "pointer-events-none"
+                )}
+                onClick={(e) => {
+                  e.preventDefault();
+                  toggleLike(post.id);
+                }}
               >
-                <ThumbsUp className="size-4" />
+                <Heart className={cn("size-4", post.hasLiked && "fill-current")} />
                 {post.likeCount}
               </Button>
               <Button
