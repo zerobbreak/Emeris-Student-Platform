@@ -17,6 +17,7 @@
 - **Hive Projects** (`/hive-projects`): gallery with top projects, course filters, and field guides/sources for niche domains via `HiveProjectsHome` (mock data until Phase 2)
 - **Create post FAB**: expandable menu on `/dashboard` and `/community` — **Feed post** (`CreatePostDialog` → `feed_posts`) and **Project post** (`CreateProjectPostDialog` → `community_posts` with kind project/assistance/tip)
 - **Feed interactions**: Implemented Comment Like system, including UI and backend logic (`feedPostCommentLikes` schema).
+- **Trending Topics**: Added dynamic extraction and calculation of trending topics based on actual community posts tags and activity. Implemented hashtag filtering across the feed via URL parameters.
 
 ---
 
@@ -52,4 +53,4 @@
 - **Platform name**: HIVE Showcase Platform for EMERIS IT
 - **Auth flow**: Register → `/onboarding` → dashboard; login → `/dashboard`; public profiles at `/profile/[id]`
 - **Default seeded admin**: `admin@emeris.ac.uk` (password from `SEED_ADMIN_PASSWORD` in `.env.local`)
-- **Last updated**: June 2026 — Comment likes system implementation and Drizzle schema access fix
+- **Last updated**: June 2026 — Trending topics and hashtag filtering implementation

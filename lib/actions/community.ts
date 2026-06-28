@@ -12,6 +12,7 @@ import {
   toggleCommunityPostDislike,
   toggleCommunityPostCommentLike,
   toggleCommunityPostCommentDislike,
+  getTrendingTopics,
 } from "@/lib/db/queries/community";
 import { createCommunityPostSchema } from "@/lib/validators/communityPostValidator";
 import type { CreateCommunityPostInput } from "@/lib/validators/communityPostValidator";
@@ -151,4 +152,11 @@ export async function toggleCommunityPostCommentDislikeAction(commentId: string)
     }
     throw error;
   }
+}
+
+export async function fetchTrendingTopicsAction() {
+  const session = await requireSession();
+  // While trending topics might not strictly need authentication, 
+  // keeping it consistent with the rest of the protected actions.
+  return getTrendingTopics();
 }

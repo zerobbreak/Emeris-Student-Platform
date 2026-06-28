@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   Bookmark,
   FolderKanban,
@@ -11,6 +12,7 @@ import {
   MessageCircle,
   ThumbsDown,
   Users,
+  X,
 } from "lucide-react";
 
 import {
@@ -218,13 +220,14 @@ export function PostCard({ post }: { post: CommunityPost }) {
 
         <div className="flex flex-wrap gap-2">
           {post.tags.map((tag) => (
-            <Badge
-              key={tag}
-              variant="outline"
-              className="border-primary/15 bg-primary/5 text-primary hover:bg-primary/10"
-            >
-              #{tag}
-            </Badge>
+            <Link key={tag} href={`/community?tag=${tag}`}>
+              <Badge
+                variant="outline"
+                className="border-primary/15 bg-primary/5 text-primary hover:bg-primary/10 transition-colors"
+              >
+                #{tag}
+              </Badge>
+            </Link>
           ))}
         </div>
 
@@ -302,18 +305,27 @@ export function PostCard({ post }: { post: CommunityPost }) {
 }
 
 export function CommunityProjectsFeed() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const tagFilter = searchParams.get("tag");
+
   const [filter, setFilter] = useState<CommunityPostFilter>("all");
   const { data: user } = useCurrentUser();
   const { data: posts = [], isLoading, isError } = useCommunityPosts("all");
 
   const sortedPosts = useMemo(() => {
-    const filtered =
+    let filtered =
       filter === "all" ? posts : posts.filter((post) => post.kind === filter);
+    
+    if (tagFilter) {
+      filtered = filtered.filter((post) => post.tags.includes(tagFilter));
+    }
+
     return [...filtered].sort(
       (a, b) =>
         new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
     );
-  }, [posts, filter]);
+  }, [posts, filter, tagFilter]);
 
   const counts = useMemo(
     () => ({
@@ -349,21 +361,41 @@ export function CommunityProjectsFeed() {
       <PlatformPageBody>
 
         <div className="sticky top-0 z-10 -mx-6 border-b border-border/60 bg-background/95 px-6 py-3 backdrop-blur-sm">
-          <div className="flex flex-wrap gap-2">
-          {feedFilters.map((item) => (
-            <Button
-              key={item.id}
-              variant={filter === item.id ? "default" : "outline"}
-              size="sm"
-              onClick={() => setFilter(item.id)}
-              className={cn(
-                filter !== item.id &&
-                  "border-primary/15 hover:border-primary/30 hover:bg-primary/5",
-              )}
-            >
-              {item.label}
-            </Button>
-          ))}
+          <div className="flex flex-wrap items-center gap-2">
+            {feedFilters.map((item) => (
+              <Button
+                key={item.id}
+                variant={filter === item.id ? "default" : "outline"}
+                size="sm"
+                onClick={() => setFilter(item.id)}
+                className={cn(
+                  filter !== item.id &&
+                    "border-primary/15 hover:border-primary/30 hover:bg-primary/5",
+                )}
+              >
+                {item.label}
+              </Button>
+            ))}
+            
+            {tagFilter && (
+              <>
+                <div className="h-4 w-px bg-border mx-1" />
+                <Badge variant="secondary" className="gap-1 px-2.5 py-1 text-sm font-medium border border-primary/20 bg-primary/10 text-primary">
+                  #{tagFilter}
+                  <button
+                    onClick={() => {
+                      const params = new URLSearchParams(searchParams.toString());
+                      params.delete("tag");
+                      router.push(params.toString() ? `/community?${params.toString()}` : "/community");
+                    }}
+                    className="ml-1 rounded-full p-0.5 hover:bg-primary/20 transition-colors"
+                  >
+                    <X className="size-3" />
+                    <span className="sr-only">Clear tag filter</span>
+                  </button>
+                </Badge>
+              </>
+            )}
           </div>
         </div>
 

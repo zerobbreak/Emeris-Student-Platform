@@ -21,8 +21,8 @@ import {
 } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { useTrendingTopics } from "@/hooks/useCommunityPosts";
 import {
-  popularTopics,
   trendingProjects,
   type TrendDirection,
 } from "@/lib/constants/communityFeed";
@@ -82,6 +82,8 @@ function TopicRank({ rank }: { rank: number }) {
 }
 
 export function PlatformFeedPanel({ user: _user, profileImage: _profileImage }: PlatformFeedPanelProps) {
+  const { data: trendingTopics = [], isLoading: isLoadingTopics } = useTrendingTopics();
+
   return (
     <aside
       aria-label="Hive trends"
@@ -112,28 +114,44 @@ export function PlatformFeedPanel({ user: _user, profileImage: _profileImage }: 
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-2 pt-0">
-            {popularTopics.map((topic, index) => (
-              <div key={topic.tag}>
-                <div className="flex items-start gap-2.5">
-                  <TopicRank rank={index + 1} />
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center justify-between gap-2">
-                      <p className="truncate text-xs font-medium">#{topic.tag}</p>
-                      <TrendIndicator
-                        trend={topic.trend}
-                        changePercent={topic.changePercent}
-                      />
+            {isLoadingTopics ? (
+              <div className="space-y-3">
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <div key={i} className="flex items-center gap-2">
+                    <div className="size-6 animate-pulse rounded-md bg-muted" />
+                    <div className="flex-1 space-y-1">
+                      <div className="h-3 w-20 animate-pulse rounded bg-muted" />
+                      <div className="h-2 w-16 animate-pulse rounded bg-muted" />
                     </div>
-                    <p className="text-[10px] text-muted-foreground">
-                      {topic.mentions} mentions · {topic.posts} posts
-                    </p>
                   </div>
-                </div>
-                {index < popularTopics.length - 1 && (
-                  <Separator className="mt-2" />
-                )}
+                ))}
               </div>
-            ))}
+            ) : trendingTopics.length === 0 ? (
+              <p className="text-center text-xs text-muted-foreground">No trending topics yet</p>
+            ) : (
+              trendingTopics.map((topic, index) => (
+                <div key={topic.tag}>
+                  <Link href={`/community?tag=${topic.tag}`} className="flex items-start gap-2.5 transition hover:opacity-80">
+                    <TopicRank rank={index + 1} />
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center justify-between gap-2">
+                        <p className="truncate text-xs font-medium text-primary hover:underline">#{topic.tag}</p>
+                        <TrendIndicator
+                          trend={topic.trend}
+                          changePercent={topic.changePercent}
+                        />
+                      </div>
+                      <p className="text-[10px] text-muted-foreground">
+                        {topic.mentions} mentions · {topic.posts} posts
+                      </p>
+                    </div>
+                  </Link>
+                  {index < trendingTopics.length - 1 && (
+                    <Separator className="mt-2" />
+                  )}
+                </div>
+              ))
+            )}
           </CardContent>
         </Card>
 

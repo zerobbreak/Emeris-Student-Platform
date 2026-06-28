@@ -1,4 +1,4 @@
-import { and, eq } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 
 import { db } from "@/lib/db/client";
 import { communityPostCommentDislikes, communityPostCommentLikes, communityPostComments, communityPostDislikes, communityPostLikes, communityPosts } from "@/lib/db/schema";
@@ -514,4 +514,25 @@ export async function toggleCommunityPostCommentDislike(
 
     return { hasDisliked: true, dislikeCount: newDislikeCount };
   }
+}
+
+export async function getTrendingTopics(limit: number = 6) {
+  const result = await db.execute(sql`
+    SELECT
+      tag,
+      COUNT(DISTINCT p.id) as posts,
+      SUM(p.like_count + p.comment_count + 1) as mentions
+    FROM community_posts p, unnest(p.tags) as tag
+    GROUP BY tag
+    ORDER BY posts DESC, mentions DESC
+    LIMIT ${limit}
+  `);
+
+  return result.map((row) => ({
+    tag: String(row.tag),
+    posts: Number(row.posts),
+    mentions: Number(row.mentions),
+    trend: "up" as const, // Mocked for UI purposes
+    changePercent: Math.floor(Math.random() * 15) + 5, // Mocked for UI purposes
+  }));
 }

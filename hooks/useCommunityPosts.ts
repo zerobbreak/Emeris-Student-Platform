@@ -13,9 +13,11 @@ import {
   toggleCommunityPostDislikeAction,
   toggleCommunityPostCommentLikeAction,
   toggleCommunityPostCommentDislikeAction,
+  fetchTrendingTopicsAction,
 } from "@/lib/actions/community";
 import type { CreateCommunityPostInput } from "@/lib/validators/communityPostValidator";
 import type { CommunityPost, CommunityPostComment, CommunityPostKind } from "@/types/communityPost";
+import type { PopularTopic } from "@/lib/constants/communityFeed";
 
 export function communityPostsQueryKey(kind: CommunityPostKind | "all" = "all") {
   return ["community-posts", kind] as const;
@@ -257,5 +259,17 @@ export function useToggleCommunityPostCommentDislike() {
       queryClient.invalidateQueries({ queryKey: ["community-posts"] });
       queryClient.invalidateQueries({ queryKey: communityPostCommentsQueryKey(postId) });
     },
+  });
+}
+
+export function trendingTopicsQueryKey() {
+  return ["trending-topics"] as const;
+}
+
+export function useTrendingTopics() {
+  return useQuery({
+    queryKey: trendingTopicsQueryKey(),
+    queryFn: () => fetchTrendingTopicsAction(),
+    staleTime: 1000 * 60 * 5, // 5 minutes
   });
 }
